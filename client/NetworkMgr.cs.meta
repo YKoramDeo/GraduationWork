@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3206f3585e9899e448f458eed6ca53fc
+timeCreated: 1461659743
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - mPlayerPrefab: {fileID: 185984, guid: 24fd686bb2325224386cec6537726ba1, type: 2}
+  - mPlayerTransform: {instanceID: 0}
+  - mPlayerLight: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -4,7 +4,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
-public class NetworkMgr : MonoBehaviour {
+public class NetworkMgr : MonoBehaviour
+{
 
     public static NetworkMgr mInstance = null;
 
@@ -25,53 +26,53 @@ public class NetworkMgr : MonoBehaviour {
     public List<OtherClientInfo> mOtherClients;
 
     private string mDebugText;
-    
+
     private class PreviousSavedData
     {
         private PlayerMoveData playerMoveData;
         private PlayerLightData playerLightData;
         private MonsterMoveData monsterMoveData;
 
-        public bool Check(PlayerMoveData curData)
+        public bool IsSame(PlayerMoveData curData)
         {
             bool retval = true;
 
             retval &= (playerMoveData.id == curData.id) ? true : false;
-            retval &= (playerMoveData.posX == curData.posX) ? true : false;
-            retval &= (playerMoveData.posY == curData.posY) ? true : false;
-            retval &= (playerMoveData.posZ == curData.posZ) ? true : false;
-            retval &= (playerMoveData.dirX == curData.dirX) ? true : false;
-            retval &= (playerMoveData.dirY == curData.dirY) ? true : false;
-            retval &= (playerMoveData.dirZ == curData.dirZ) ? true : false;
-            retval &= (playerMoveData.horizental == curData.horizental) ? true : false;
-            retval &= (playerMoveData.vertical == curData.vertical) ? true : false;
+            retval &= (Math.Abs(playerMoveData.posX - curData.posX) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.posY - curData.posY) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.posZ - curData.posZ) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.dirX - curData.dirX) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.dirY - curData.dirY) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.dirZ - curData.dirZ) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.horizental - curData.horizental) < 3.0f) ? true : false;
+            retval &= (Math.Abs(playerMoveData.vertical - curData.vertical) < 3.0f) ? true : false;
             retval &= (playerMoveData.sneak == curData.sneak) ? true : false;
 
             return retval;
         }
 
-        public bool Check(PlayerLightData curData)
+        public bool IsSame(PlayerLightData curData)
         {
             bool retval = true;
 
             retval &= (playerLightData.id == curData.id) ? true : false;
             retval &= (playerLightData.on == curData.on) ? true : false;
-            retval &= (playerLightData.rotX == curData.rotX) ? true : false;
-            retval &= (playerLightData.rotY == curData.rotY) ? true : false;
-            retval &= (playerLightData.rotZ == curData.rotZ) ? true : false;
-            retval &= (playerLightData.rotW == curData.rotW) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotX - curData.rotX) < 0.5f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotY - curData.rotY) < 0.5f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotZ - curData.rotZ) < 0.5f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotW - curData.rotW) < 0.5f) ? true : false;
 
             return retval;
         }
 
-        public bool Check(MonsterMoveData curData)
+        public bool IsSame(MonsterMoveData curData)
         {
             bool retval = true;
 
-            retval &= (monsterMoveData.posX == curData.posX) ? true : false;
-            retval &= (monsterMoveData.posY == curData.posY) ? true : false;
-            retval &= (monsterMoveData.posZ == curData.posZ) ? true : false;
-            
+            retval &= (Math.Abs(monsterMoveData.posX - curData.posX) < 1.0f) ? true : false;
+            retval &= (Math.Abs(monsterMoveData.posY - curData.posY) < 1.0f) ? true : false;
+            retval &= (Math.Abs(monsterMoveData.posZ - curData.posZ) < 1.0f) ? true : false;
+
             return retval;
         }
 
@@ -106,13 +107,13 @@ public class NetworkMgr : MonoBehaviour {
 
         GetInstance();
         mNetwork = new NetworkLib();
-        //mIPBuf = "127.0.0.1";
+        //mIPBuf = "172.30.1.15";
         mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
         mPlayerLight = null;
 
-        mMyID = (int)NetConfig.NIL; 
+        mMyID = (int)NetConfig.NIL;
         mOtherClients = new List<OtherClientInfo>();
         mDebugText = "";
         mPreviousSavedData = new PreviousSavedData();
@@ -136,7 +137,7 @@ public class NetworkMgr : MonoBehaviour {
     {
         byte[] packet = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
 
-        if(mNetwork.Receive(ref packet, packet.Length) != -1)
+        if (mNetwork.Receive(ref packet, packet.Length) != -1)
             ReceivePacket(packet);
     }
 
@@ -152,9 +153,9 @@ public class NetworkMgr : MonoBehaviour {
     }
 
     public void CreatePlayer(int cloneID, Vector3 pos)
-    { 
+    {
         // 네트워크 상에 플레이어를 동적 생성 함수       
-       
+
         if (cloneID == mMyID)
         {
             mPlayerTransform = GameObject.FindGameObjectWithTag(Tags.player).GetComponent<Transform>();
@@ -242,7 +243,7 @@ public class NetworkMgr : MonoBehaviour {
         switch (packetType)
         {
             case (byte)PacketType.SetID:
-                if(mMyID == (int)NetConfig.NIL)
+                if (mMyID == (int)NetConfig.NIL)
                     OnReceiveSetIDPacket(packetData);
                 break;
             case (byte)PacketType.Connect:
@@ -263,6 +264,36 @@ public class NetworkMgr : MonoBehaviour {
             case (byte)PacketType.MonsterSetInfo:
                 OnReceiveMonsterSetInfo(packetData);
                 break;
+        }
+
+        return;
+    }
+
+    private void OnReceivePlayerShoutPacket(byte[] packetData)
+    {
+        PlayerShoutPacket packet = new PlayerShoutPacket(packetData);
+        PlayerShoutData data = packet.GetPacketData();
+
+        int id;
+        bool shoutBool;
+        Vector3 otherPlayerPosition;
+
+        id = data.id;
+        shoutBool = data.shouting;
+        otherPlayerPosition.x = data.posX;
+        otherPlayerPosition.y = data.posY;
+        otherPlayerPosition.z = data.posZ;
+
+        if (id != mMyID)
+        {
+            int index = mOtherClients.FindIndex(
+                    delegate (OtherClientInfo i)
+                    {
+                        return i.id == id;
+                    });
+            if (-1 != index)
+                // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
+                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentShout(shoutBool, otherPlayerPosition);
         }
 
         return;
@@ -353,12 +384,12 @@ public class NetworkMgr : MonoBehaviour {
         data.vertical = v;
         data.sneak = s;
 
-        if (!mPreviousSavedData.Check(data))
+        if (!mPreviousSavedData.IsSame(data))
         {
             PlayerMovePacket packet = new PlayerMovePacket(data);
             SendReliable(packet);
+            mPreviousSavedData.SetData(data);
         }
-        mPreviousSavedData.SetData(data);
 
         return;
     }
@@ -391,14 +422,14 @@ public class NetworkMgr : MonoBehaviour {
                     {
                         return i.id == info.id;
                     });
-            if(-1 != index)
+            if (-1 != index)
                 // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s,info.pos);
-                // !!!!
-                //mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos, lightOn, lightRotation);
-            
-        }        
-        
+                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos);
+            // !!!!
+            //mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos, lightOn, lightRotation);
+
+        }
+
         return;
     }
 
@@ -412,12 +443,12 @@ public class NetworkMgr : MonoBehaviour {
         data.rotZ = rotation.z;
         data.rotW = rotation.w;
 
-        if (!mPreviousSavedData.Check(data))
+        if (!mPreviousSavedData.IsSame(data))
         {
             PlayerLightPacket packet = new PlayerLightPacket(data);
             SendReliable(packet);
+            mPreviousSavedData.SetData(data);
         }
-        mPreviousSavedData.SetData(data);
 
         return;
     }
@@ -446,7 +477,7 @@ public class NetworkMgr : MonoBehaviour {
                     });
             if (-1 != index)
                 // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentLight(on,rotation);
+                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentLight(on, rotation);
         }
         return;
     }
@@ -477,13 +508,13 @@ public class NetworkMgr : MonoBehaviour {
         data.posX = pos.x;
         data.posY = pos.y;
         data.posZ = pos.z;
-        
-        if (!mPreviousSavedData.Check(data))
+
+        if (!mPreviousSavedData.IsSame(data))
         {
             MonsterMovePacket packet = new MonsterMovePacket(data);
             SendReliable(packet);
+            mPreviousSavedData.SetData(data);
         }
-        mPreviousSavedData.SetData(data);
 
         return;
     }
@@ -499,36 +530,7 @@ public class NetworkMgr : MonoBehaviour {
 
         PlayerShoutPacket packet = new PlayerShoutPacket(data);
         SendReliable(packet);
-        
-        return;
-    }
-    
-    private void OnReceivePlayerShoutPacket(byte[] packetData)
-    {
-        PlayerShoutPacket packet = new PlayerShoutPacket(packetData);
-        PlayerShoutData data = packet.GetPacketData();
 
-        int id;
-        bool shoutBool;
-        Vector3 otherPlayerPosition;
-
-        id = data.id;
-        shoutBool = data.shouting;
-        otherPlayerPosition.x = data.posX;
-        otherPlayerPosition.y = data.posY;
-        otherPlayerPosition.z = data.posZ;
-
-        if (id != mMyID)
-        {
-            int index = mOtherClients.FindIndex(
-                    delegate (OtherClientInfo i)
-                    {
-                        return i.id == id;
-                    });
-            if (-1 != index)
-                // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentShout(shoutBool, otherPlayerPosition);
-        }
         return;
     }
 
@@ -564,27 +566,27 @@ public class NetworkMgr : MonoBehaviour {
     private Dictionary<int, RecvNotifier> m_notifier = new Dictionary<int, RecvNotifier>();
     */
 
-        /*
-    public void RegisterReceiveNotification(PacketID id, RecvNotifier notifier)
+    /*
+public void RegisterReceiveNotification(PacketID id, RecvNotifier notifier)
+{
+    int index = (int)id;
+
+    if (m_notifier.ContainsKey(index))
     {
-        int index = (int)id;
-
-        if (m_notifier.ContainsKey(index))
-        {
-            m_notifier.Remove(index);
-        }
-
-        m_notifier.Add(index, notifier);
+        m_notifier.Remove(index);
     }
 
-    public void UnregisterReceiveNotification(PacketID id)
-    {
-        int index = (int)id;
+    m_notifier.Add(index, notifier);
+}
 
-        if (m_notifier.ContainsKey(index))
-        {
-            m_notifier.Remove(index);
-        }
+public void UnregisterReceiveNotification(PacketID id)
+{
+    int index = (int)id;
+
+    if (m_notifier.ContainsKey(index))
+    {
+        m_notifier.Remove(index);
     }
-    */
+}
+*/
 }

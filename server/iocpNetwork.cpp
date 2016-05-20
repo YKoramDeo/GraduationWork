@@ -117,10 +117,10 @@ void WorkerThreadFunc(void)
 		}
 		if (OP_RECV == overlap->operation)
 		{
-			std::cout << "WorkerThreadFunc	:: Send Packet io Size : " << ioSize << std::endl;
 
 			unsigned char *buf_ptr = overlap->buffer;
 			int remained = ioSize;
+			std::cout << "WorkerThreadFunc	:: " << (int)buf_ptr[1] << " Send Packet io Size : " << ioSize << std::endl;
 			while (0 < remained)
 			{
 				if (0 == gClientsList[key].recvOverlap.packetSize)

@@ -106,8 +106,8 @@ public class NetworkMgr : MonoBehaviour {
 
         GetInstance();
         mNetwork = new NetworkLib();
-        mIPBuf = "127.0.0.1";
-        //mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
+        //mIPBuf = "127.0.0.1";
+        mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
         mPlayerLight = null;
@@ -125,7 +125,7 @@ public class NetworkMgr : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        //GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
+        GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
         Application.runInBackground = true;
         if (!mNetwork.Connect(mIPBuf, (int)NetConfig.SERVER_PORT))
             mDebugText = "Start::Connect Fail !!";
@@ -134,14 +134,10 @@ public class NetworkMgr : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
-        if (mNetwork.HasData())
-        {
-            byte[] packet = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
+        byte[] packet = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
 
-            mNetwork.Receive(ref packet, packet.Length);
+        if(mNetwork.Receive(ref packet, packet.Length) != -1)
             ReceivePacket(packet);
-        }
-
     }
 
     void OnApplicationQuit()

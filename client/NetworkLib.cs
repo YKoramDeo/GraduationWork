@@ -99,8 +99,12 @@ public class NetworkLib
 
             int nSendSize = mSendQueue.Dequeue(ref buffer, buffer.Length);
 
-            if (nSendSize > 0)
+            while (nSendSize > 0)
+            {
                 mSocket.Send(buffer, nSendSize, SocketFlags.None);
+                Debug.Log("Send Packet : " + (PacketType)buffer[1] + ", size : " + nSendSize);
+                nSendSize = mSendQueue.Dequeue(ref buffer, buffer.Length);
+            }
         }
         return;
     }

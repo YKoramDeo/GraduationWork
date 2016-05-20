@@ -92,9 +92,4 @@ public class PacketQueue
 		mStreamBuffer.Position = 0;
 		mStreamBuffer.SetLength(0);
 	}
-
-    public bool HasData()
-    {
-        return (mOffsetList.Count != 0) ? true : false;
-    }
 }

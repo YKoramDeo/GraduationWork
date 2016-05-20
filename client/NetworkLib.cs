@@ -140,9 +140,4 @@ public class NetworkLib
     {
         return mRecvQueue.Dequeue(ref buffer, size);
     }
-
-    public bool HasData()
-    {
-        return mRecvQueue.HasData();
-    }
 }

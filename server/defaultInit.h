@@ -1,5 +1,17 @@
 #pragma once
 
+// ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ 
+//
+//						defaultInit_H
+//
+//		프로그램을 실행하기 위해 rmsdyddl(본인)이 
+//		별도로 필요한 내용을 선언한 곳
+//
+// ------ ------ ------ ------ ------ ------ ------ ------ ------ ------
+
+#include "stdafx.h"
+#include "protocol.h"
+
 #define NIL						-999	// 내가 정한 NULL이 아닌 default 값
 #define NUM_OF_MONSTER_PATH		4
 
@@ -29,9 +41,7 @@ struct Monster
 	Vector3 patrolPos;
 };
 
-Vector3 tmpMonsterPath = { 200.0f,0.0f,0.0f };
-
-Vector3 monsterPath[NUM_OF_MONSTER_PATH] = {	(160.0f,	0.0f,	30.0f),
-												(90.0f,		0.0f,	60.0f),
-												(160.0f,	0.0f,	-60.0f),
-												(200.0f,	0.0f,	0.0f) };
+extern Monster gMonster;
+extern std::mutex gLock;
+extern Vector3 tmpMonsterPath;
+extern Vector3 monsterPath[NUM_OF_MONSTER_PATH];

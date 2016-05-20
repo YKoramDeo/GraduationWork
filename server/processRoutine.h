@@ -2,7 +2,7 @@
 
 // ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ 
 //
-//						processPacket_H
+//						processRoutine_H
 //
 //		IOCP에서 실제로 packet을 처리하는 함수를 별도로 선언하는 곳
 //
@@ -12,6 +12,7 @@
 #include "protocol.h"
 #include "iocpNetwork.h"
 
+bool BeCompeletedSendPacket(BYTE, BYTE);
 void ProcessPacket(int, unsigned char*);
 
 namespace OnReceivePacket

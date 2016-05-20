@@ -1,4 +1,52 @@
-#include "processNetwork.h"
+#include "processRoutine.h"
+
+
+bool BeCompeletedSendPacket(BYTE type, BYTE size)
+{
+	switch (type)
+	{
+	case PacketType::SetID: 
+		if (size != sizeof(Packet::SetID)) 
+			return false; 
+		break;
+	case PacketType::Connect:
+		if (size != sizeof(Packet::Connect))
+			return false;
+		break;
+	case PacketType::Disconnect:
+		if (size != sizeof(Packet::Disconnect))
+			return false;
+		break;
+	case PacketType::PlayerMove:
+		if (size != sizeof(Packet::Player::Move))
+			return false;
+		break;
+	case PacketType::PlayerLight:
+		if (size != sizeof(Packet::Player::Light))
+			return false;
+		break;
+	case PacketType::PlayerShout:
+		if (size != sizeof(Packet::Player::Shout))
+			return false;
+		break;
+	case PacketType::MonsterSetInfo:
+		if (size != sizeof(Packet::Monster::SetInfo))
+			return false;
+		break;
+	case PacketType::MonsterMove:
+		if (size != sizeof(Packet::Monster::Move))
+			return false;
+		break;
+	case PacketType::MonsterSetPatrolPos:
+		if (size != sizeof(Packet::Monster::SetPatrolPos))
+			return false;
+		break;
+	default:
+		break;
+	}
+
+	return true;
+}
 
 void ProcessPacket(int key, unsigned char *packet)
 {
@@ -158,11 +206,10 @@ void SendMonsterSetInfoPacket(int key)
 
 	SendPacket(key, reinterpret_cast<unsigned char*>(&monsterSetInfoPacket));
 
-	/*
 	gLock.lock();
 	std::cout << "ProcessPacket		:: " << key << " client <= gMonster Pos(" << gMonster.pos.x << ", " << gMonster.pos.y << ", " << gMonster.pos.z << ")" << std::endl;
 	std::cout << "ProcessPacket		:: " << key << " client <= gMonster Patrol Pos(" << gMonster.patrolPos.x << ", " << gMonster.patrolPos.y << ", " << gMonster.patrolPos.z << ")" << std::endl;
 	gLock.unlock();
-	*/
+	
 	return;
 }

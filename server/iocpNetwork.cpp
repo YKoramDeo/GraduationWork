@@ -117,6 +117,8 @@ void WorkerThreadFunc(void)
 		}
 		if (OP_RECV == overlap->operation)
 		{
+			std::cout << "WorkerThreadFunc	:: Send Packet io Size : " << ioSize << std::endl;
+
 			unsigned char *buf_ptr = overlap->buffer;
 			int remained = ioSize;
 			while (0 < remained)
@@ -166,17 +168,10 @@ void WorkerThreadFunc(void)
 			BYTE packetType = overlap->buffer[1];
 			BYTE packetSize = overlap->buffer[0];
 
-			switch (packetType)
-			{
-			case PacketType::SetID:
-				break;
-			case PacketType::Connect:
-				break;
-			default:
-				break;
-			}
-
-			delete overlap;
+			if (BeCompeletedSendPacket(packetType, packetSize))
+				delete overlap;
+			else
+				std::cout << "WorkerThreadFunc:: "<< key <<" client don't send " << packetType << "No. packet" << std::endl;
 		}
 		else
 		{

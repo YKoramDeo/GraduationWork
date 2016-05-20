@@ -44,4 +44,6 @@ void StopServer(void);
 void WorkerThreadFunc(void);
 void AcceptThreadFunc(void);
 void SendPacket(const int, const unsigned char*);
+
 extern void ProcessPacket(int, unsigned char*);
+extern bool BeCompeletedSendPacket(BYTE, BYTE);

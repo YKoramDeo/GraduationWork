@@ -9,6 +9,26 @@ public enum NetConfig
     NIL             = -9999
 }
 
+public enum NetEventType
+{
+    Connect = 0,
+    Disconnect,
+    SendError,
+    ReceiveError
+}
+
+public enum NetEventResult
+{
+    Failure = -1,
+    Success = 0
+}
+
+public class NetEventState
+{
+    public NetEventType mType;
+    public NetEventResult mResult;
+}
+
 public struct PlayerInfo
 {
     public int id;

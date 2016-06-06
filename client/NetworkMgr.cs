@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Threading;
 
 public class NetworkMgr : MonoBehaviour {
 
@@ -10,6 +11,7 @@ public class NetworkMgr : MonoBehaviour {
 
     private NetworkLib mNetwork;
     private string mIPBuf;
+    private Thread mThread;
 
     private Transform mPlayerTransform;
     private GameObject mPlayerLight;
@@ -95,6 +97,15 @@ public class NetworkMgr : MonoBehaviour {
     };
     private PreviousSavedData mPreviousSavedData;
 
+    // 수신 패킷 처리함수 델리게이트.
+    public delegate void RecvNotifier(PacketType id, byte[] data);
+    // 수신 패킷 분배 해시 테이블.
+    private Dictionary<int, RecvNotifier> mNotifier;
+    // 이벤트 통지 델리게이트.
+    public delegate void EventHandler(NetEventState state);
+    // 이벤트 핸들러
+    private EventHandler mHandler;
+
     private Vector3 mMonsterCurPos;
     private Vector3 mMonsterPatrolPos;
     private GameObject enemy;
@@ -117,6 +128,8 @@ public class NetworkMgr : MonoBehaviour {
         mDebugText = "";
         mPreviousSavedData = new PreviousSavedData();
 
+        mNotifier = new Dictionary<int, RecvNotifier>();
+
         mMonsterCurPos = Vector3.zero;
         mMonsterPatrolPos = Vector3.zero;
         enemy = GameObject.FindGameObjectWithTag(Tags.enemy);
@@ -129,6 +142,11 @@ public class NetworkMgr : MonoBehaviour {
         Application.runInBackground = true;
         if (!mNetwork.Connect(mIPBuf, (int)NetConfig.SERVER_PORT))
             mDebugText = "Start::Connect Fail !!";
+        else
+        {
+            mNetwork.RegisterEventHandler(OnEventHandling);
+            LaunchThread();
+        }
     }
 
     // Update is called once per frame
@@ -144,6 +162,7 @@ public class NetworkMgr : MonoBehaviour {
     {
         //SendDisconnectPacket();
         mNetwork.Disconnect();
+        mThread.Join();
     }
 
     void OnGUI()
@@ -151,10 +170,140 @@ public class NetworkMgr : MonoBehaviour {
         GUI.Label(new Rect(20, 20, 400, 25), "" + mDebugText);
     }
 
+    private void LaunchThread()
+    {
+        try {
+            mThread = new Thread(new ThreadStart(mNetwork.Dispatch));
+            mThread.Start();
+        }
+        catch {
+            Debug.Log("Cannot launch thread.");
+        }
+        return;
+    }
+
+    public void RegisterReceiveNotification(PacketType id, RecvNotifier notifier)
+    {
+        int index = (int)id;
+
+        if (mNotifier.ContainsKey(index)) mNotifier.Remove(index);
+
+        mNotifier.Add(index, notifier);
+        return;
+    }
+
+    public void UnregisterReceiveNotification(PacketType id)
+    {
+        int index = (int)id;
+
+        if (mNotifier.ContainsKey(index)) mNotifier.Remove(index);
+        return;
+    }
+
+    public void RegisterEventHandler(EventHandler handler)
+    {
+        mHandler += handler;
+        return;
+    }
+
+    public void UnregisterEventHandler(EventHandler handler)
+    {
+        mHandler -= handler;
+        return;
+    }
+
+    public void OnEventHandling(NetEventState state)
+    {
+        if (mHandler != null)
+        {
+            mHandler(state);
+        }
+        return;
+    }
+
+    private int SendReliable<T>(IPacket<T> packet)
+    {
+        int nSendSize = 0;
+
+        if (mNetwork != null)
+        {
+            PacketHeader header = new PacketHeader();
+            HeaderSerializer serializer = new HeaderSerializer();
+
+            byte[] packetData = packet.GetByteData();
+
+            header.size = (byte)(sizeof(byte) + sizeof(byte) + packetData.Length);
+            header.type = packet.GetPacketType();
+
+            byte[] headerData = null;
+            if (serializer.Serialize(header) == false) return 0;
+            headerData = serializer.GetSerializedData();
+
+            byte[] data = new byte[headerData.Length + packetData.Length];
+            int headerSize = Marshal.SizeOf(typeof(PacketHeader));
+            Buffer.BlockCopy(headerData, 0, data, 0, headerSize);
+            Buffer.BlockCopy(packetData, 0, data, headerSize, packetData.Length);
+
+            nSendSize = mNetwork.Send(data, data.Length);
+        }
+
+        return nSendSize;
+    }
+
+    private void ReceivePacket(byte[] data)
+    {
+        PacketHeader header = new PacketHeader();
+        HeaderSerializer serializer = new HeaderSerializer();
+
+        bool ret = serializer.Deserialize(data, ref header);
+        if (false == ret) return;
+        // Packet으로서 인식할 수 없으므로 폐기합니다.
+
+        byte packetType = header.type;
+
+        if (mNotifier.ContainsKey(packetType) && mNotifier[packetType] != null)
+        {
+            int headerSize = Marshal.SizeOf(typeof(PacketHeader)); //sizeof(byte) + sizeof(byte);
+            byte[] packetData = new byte[data.Length - headerSize];
+            Buffer.BlockCopy(data, headerSize, packetData, 0, packetData.Length);
+
+            mNotifier[(int)packetType]((PacketType)packetType, packetData);
+        }
+        // 160606
+        /*
+        switch (packetType)
+        {
+            case (byte)PacketType.SetID:
+                if(mMyID == (int)NetConfig.NIL)
+                    OnReceiveSetIDPacket(packetData);
+                break;
+            case (byte)PacketType.Connect:
+                OnReceiveConnectPacket(packetData);
+                break;
+            case (byte)PacketType.Disconnect:
+                OnReceiveDisconnectPacket(packetData);
+                break;
+            case (byte)PacketType.PlayerMove:
+                OnReceivePlayerMovePacket(packetData);
+                break;
+            case (byte)PacketType.PlayerLight:
+                OnReceivePlayerLightPacket(packetData);
+                break;
+            case (byte)PacketType.PlayerShout:
+                OnReceivePlayerShoutPacket(packetData);
+                break;
+            case (byte)PacketType.MonsterSetInfo:
+                OnReceiveMonsterSetInfo(packetData);
+                break;
+        }
+        */
+        return;
+    }
+
     public void CreatePlayer(int cloneID, Vector3 pos)
-    { 
+    {
         // 네트워크 상에 플레이어를 동적 생성 함수       
-       
+
         if (cloneID == mMyID)
         {
             mPlayerTransform = GameObject.FindGameObjectWithTag(Tags.player).GetComponent<Transform>();
@@ -193,80 +342,6 @@ public class NetworkMgr : MonoBehaviour {
             instance.transform.gameObject.GetComponent<PlayerMovement>().mInstanceID = cloneID;
         }
 
-        return;
-    }
-
-    private int SendReliable<T>(IPacket<T> packet)
-    {
-        int nSendSize = 0;
-
-        if (mNetwork != null)
-        {
-            PacketHeader header = new PacketHeader();
-            HeaderSerializer serializer = new HeaderSerializer();
-
-            byte[] packetData = packet.GetByteData();
-
-            header.size = (byte)(sizeof(byte) + sizeof(byte) + packetData.Length);
-            header.type = packet.GetPacketType();
-
-            byte[] headerData = null;
-            if (serializer.Serialize(header) == false) return 0;
-            headerData = serializer.GetSerializedData();
-
-            byte[] data = new byte[headerData.Length + packetData.Length];
-            int headerSize = Marshal.SizeOf(typeof(PacketHeader));
-            Buffer.BlockCopy(headerData, 0, data, 0, headerSize);
-            Buffer.BlockCopy(packetData, 0, data, headerSize, packetData.Length);
-
-            nSendSize = mNetwork.Send(data, data.Length);
-        }
-
-        return nSendSize;
-    }
-
-    private void ReceivePacket(byte[] data)
-    {
-        PacketHeader header = new PacketHeader();
-        HeaderSerializer serializer = new HeaderSerializer();
-
-        serializer.Deserialize(data, ref header);
-
-        int headerSize = sizeof(byte) + sizeof(byte);
-        byte packetType = header.type;
-
-        byte[] packetData = new byte[data.Length - headerSize];
-
-        Buffer.BlockCopy(data, headerSize, packetData, 0, packetData.Length);
-
-        // 160606
-        /*
-        switch (packetType)
-        {
-            case (byte)PacketType.SetID:
-                if(mMyID == (int)NetConfig.NIL)
-                    OnReceiveSetIDPacket(packetData);
-                break;
-            case (byte)PacketType.Connect:
-                OnReceiveConnectPacket(packetData);
-                break;
-            case (byte)PacketType.Disconnect:
-                OnReceiveDisconnectPacket(packetData);
-                break;
-            case (byte)PacketType.PlayerMove:
-                OnReceivePlayerMovePacket(packetData);
-                break;
-            case (byte)PacketType.PlayerLight:
-                OnReceivePlayerLightPacket(packetData);
-                break;
-            case (byte)PacketType.PlayerShout:
-                OnReceivePlayerShoutPacket(packetData);
-                break;
-            case (byte)PacketType.MonsterSetInfo:
-                OnReceiveMonsterSetInfo(packetData);
-                break;
-        }
-        */
         return;
     }
 

@@ -285,9 +285,9 @@ void AcceptThreadFunc(void)
 		ZeroMemory(gClientsList[newID].packetBuf, MAX_BUFF_SIZE);
 		gClientsList[newID].previousDataSize = 0;
 		// newClient.player 내용 채우기
-		gClientsList[newID].player.pos.x = 263.0f;
-		gClientsList[newID].player.pos.y = -14.0f;
-		gClientsList[newID].player.pos.z = -2.0f;
+		gClientsList[newID].player.pos.x = 247.92f;
+		gClientsList[newID].player.pos.y = -4.29f;
+		gClientsList[newID].player.pos.z = -1.23f;
 
 		// 새로운 클라이언트 접속 알림
 		Packet::SetID clientSetIDPacket;

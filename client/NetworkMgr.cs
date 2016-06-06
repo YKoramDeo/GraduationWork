@@ -145,6 +145,7 @@ public class NetworkMgr : MonoBehaviour {
         else
         {
             RegisterReceiveNotification(PacketType.SetID, OnReceiveSetIDPacket);
+            RegisterReceiveNotification(PacketType.Connect, OnReceiveConnectPacket);
             mNetwork.RegisterEventHandler(OnEventHandling);
             LaunchThread();
         }
@@ -309,8 +310,6 @@ public class NetworkMgr : MonoBehaviour {
         {
             mPlayerTransform = GameObject.FindGameObjectWithTag(Tags.player).GetComponent<Transform>();
             mPlayerLight = GameObject.FindGameObjectWithTag("FlashLight");
-
-            GameObject.FindGameObjectWithTag(Tags.player).GetComponent<PlayerMovement>().mInstanceID = cloneID;
         }
         else
         {
@@ -354,8 +353,58 @@ public class NetworkMgr : MonoBehaviour {
 
         CreatePlayer(data.id, new Vector3(263.0f, -14.0f, -2.0f));
 
-        Debug.Log("NetworkMgr::OnReceiveSetIDPacket::Called!");
-        Debug.Log("NetworkMgr::OnReceiveSetIDPacket::My Id = " + mMyID.ToString());
+        // 함수 동작 후 결과를 통해 플레이어 객체에 ID 부여
+        if (true == SendConnectPacket())
+            GameObject.FindGameObjectWithTag(Tags.player).GetComponent<PlayerMovement>().mInstanceID = mMyID;
+
+        return;
+    }
+
+    private bool SendConnectPacket()
+    {
+        try {
+            ConnectData data = new ConnectData();
+            data.id = mMyID;
+            data.posX = mPlayerTransform.position.x;
+            data.posY = mPlayerTransform.position.y;
+            data.posZ = mPlayerTransform.position.z;
+
+            ConnectPacket packet = new ConnectPacket(data);
+            SendReliable(packet);
+        }
+        catch
+        {
+            if(mHandler != null)
+            {
+                NetEventState state = new NetEventState();
+                state.mType = NetEventType.SendError;
+                state.mResult = NetEventResult.Failure;
+                mHandler(state);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void OnReceiveConnectPacket(PacketType type, byte[] packetData)
+    {
+        ConnectPacket packet = new ConnectPacket(packetData);
+        ConnectData data = packet.GetPacketData();
+
+        PlayerInfo info = new PlayerInfo();
+        info.id = data.id;
+
+        if (info.id != mMyID)
+        {
+            Debug.Log("OnReceiveCpnnectPacket :: " + info.id + " client connect !");
+            info.pos.x = data.posX;
+            info.pos.y = data.posY;
+            info.pos.z = data.posZ;
+
+            CreatePlayer(info.id, info.pos);
+
+            Debug.Log("OnReceiveCpnnectPacket :: " + info.id + "client (" + info.pos.x + ", " + info.pos.y + ", " + info.pos.z + ")");
+        }
 
         return;
     }

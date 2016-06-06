@@ -105,7 +105,9 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		preOtherPlayerPacket.posZ = gClientsList[ci].player.pos.z;
 		SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
 
-		//std::cout << "ProcessPacket		:: " << key << " client <= " << ci << " client data" << std::endl;
+		std::cout << "ProcessPacket		:: " << key << " client <= " << ci << " client data" << std::endl;
+		std::cout << "ProcessPacket		:: " << key << " client <= " 
+			<< ci << " (" << gClientsList[ci].player.pos.x << ", " << gClientsList[ci].player.pos.y << ", "<< gClientsList[ci].player.pos.z<< ")" << std::endl;
 	}
 
 	return;

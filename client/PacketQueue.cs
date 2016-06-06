@@ -3,34 +3,34 @@ using System.Collections.Generic;
 using System.IO;
 
 public class PacketQueue
-{
-    // 패킷 저장 정보.
-    struct PacketInfo
-    {
-        public int offset;
-        public int size;
-    };
-
-    // 데이터를 보존할 버퍼
-    private MemoryStream mStreamBuffer;
-    // 패킷 정보 관리 리스트
-    private List<PacketInfo> mOffsetList;
-    // 메모리 배치 오프셋
-    private int mOffset = 0;
+{	
+	// 패킷 저장 정보.
+	struct PacketInfo
+	{
+		public int	offset;
+		public int 	size;
+	};
+	
+	// 데이터를 보존할 버퍼
+	private MemoryStream 		mStreamBuffer;
+	// 패킷 정보 관리 리스트
+	private List<PacketInfo>	mOffsetList;
+	// 메모리 배치 오프셋
+	private int					mOffset = 0;
 
     //Lock
     private Object mLock;
 
-    // 생성자(초기화)
-    public PacketQueue()
-    {
-        mStreamBuffer = new MemoryStream();
-        mOffsetList = new List<PacketInfo>();
+	// 생성자(초기화)
+	public PacketQueue()
+	{
+		mStreamBuffer = new MemoryStream();
+		mOffsetList = new List<PacketInfo>();
         mLock = new object();
-    }
-
-    public int Enqueue(byte[] data, int size)
-    {
+	}
+	
+	public int Enqueue(byte[] data, int size)
+	{
         PacketInfo info = new PacketInfo();
 
         lock (mLock)
@@ -51,13 +51,11 @@ public class PacketQueue
         return size;
     }
 
-    public int Dequeue(ref byte[] buffer, int size)
-    {
+    public int Dequeue(ref byte[] buffer, int size) {
 
-        if (mOffsetList.Count <= 0)
-        {
-            return -1;
-        }
+		if (mOffsetList.Count <= 0) {
+			return -1;
+		}
 
         int recvSize;
 
@@ -85,19 +83,14 @@ public class PacketQueue
         }
 
         return recvSize;
-    }
-
-    public void Clear()
-    {
-        byte[] buffer = mStreamBuffer.GetBuffer();
-        Array.Clear(buffer, 0, buffer.Length);
-
-        mStreamBuffer.Position = 0;
-        mStreamBuffer.SetLength(0);
-    }
-
-    public bool HasData()
-    {
-        return (mOffsetList.Count != 0) ? true : false;
-    }
+	}
+	
+	public void Clear()
+	{
+		byte[] buffer = mStreamBuffer.GetBuffer();
+		Array.Clear(buffer, 0, buffer.Length);
+		
+		mStreamBuffer.Position = 0;
+		mStreamBuffer.SetLength(0);
+	}
 }

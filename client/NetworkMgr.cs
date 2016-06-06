@@ -4,8 +4,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
-public class NetworkMgr : MonoBehaviour
-{
+public class NetworkMgr : MonoBehaviour {
 
     public static NetworkMgr mInstance = null;
 
@@ -26,7 +25,7 @@ public class NetworkMgr : MonoBehaviour
     public List<OtherClientInfo> mOtherClients;
 
     private string mDebugText;
-
+    
     private class PreviousSavedData
     {
         private PlayerMoveData playerMoveData;
@@ -72,7 +71,7 @@ public class NetworkMgr : MonoBehaviour
             retval &= (Math.Abs(monsterMoveData.posX - curData.posX) < 1.0f) ? true : false;
             retval &= (Math.Abs(monsterMoveData.posY - curData.posY) < 1.0f) ? true : false;
             retval &= (Math.Abs(monsterMoveData.posZ - curData.posZ) < 1.0f) ? true : false;
-
+            
             return retval;
         }
 
@@ -107,13 +106,13 @@ public class NetworkMgr : MonoBehaviour
 
         GetInstance();
         mNetwork = new NetworkLib();
-        //mIPBuf = "172.30.1.15";
-        mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
+        mIPBuf = "127.0.0.1";
+        //mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
         mPlayerLight = null;
 
-        mMyID = (int)NetConfig.NIL;
+        mMyID = (int)NetConfig.NIL; 
         mOtherClients = new List<OtherClientInfo>();
         mDebugText = "";
         mPreviousSavedData = new PreviousSavedData();
@@ -126,7 +125,7 @@ public class NetworkMgr : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
+        //GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
         Application.runInBackground = true;
         if (!mNetwork.Connect(mIPBuf, (int)NetConfig.SERVER_PORT))
             mDebugText = "Start::Connect Fail !!";
@@ -137,8 +136,8 @@ public class NetworkMgr : MonoBehaviour
     {
         byte[] packet = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
 
-        if (mNetwork.Receive(ref packet, packet.Length) != -1)
-            ReceivePacket(packet);
+       if(mNetwork.Receive(ref packet, packet.Length) != -1)
+             ReceivePacket(packet);
     }
 
     void OnApplicationQuit()
@@ -153,9 +152,9 @@ public class NetworkMgr : MonoBehaviour
     }
 
     public void CreatePlayer(int cloneID, Vector3 pos)
-    {
+    { 
         // 네트워크 상에 플레이어를 동적 생성 함수       
-
+       
         if (cloneID == mMyID)
         {
             mPlayerTransform = GameObject.FindGameObjectWithTag(Tags.player).GetComponent<Transform>();
@@ -240,10 +239,12 @@ public class NetworkMgr : MonoBehaviour
 
         Buffer.BlockCopy(data, headerSize, packetData, 0, packetData.Length);
 
+        // 160606
+        /*
         switch (packetType)
         {
             case (byte)PacketType.SetID:
-                if (mMyID == (int)NetConfig.NIL)
+                if(mMyID == (int)NetConfig.NIL)
                     OnReceiveSetIDPacket(packetData);
                 break;
             case (byte)PacketType.Connect:
@@ -265,10 +266,12 @@ public class NetworkMgr : MonoBehaviour
                 OnReceiveMonsterSetInfo(packetData);
                 break;
         }
-
+        */
         return;
     }
 
+    // 160606
+    /*
     private void OnReceivePlayerShoutPacket(byte[] packetData)
     {
         PlayerShoutPacket packet = new PlayerShoutPacket(packetData);
@@ -422,14 +425,14 @@ public class NetworkMgr : MonoBehaviour
                     {
                         return i.id == info.id;
                     });
-            if (-1 != index)
+            if(-1 != index)
                 // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos);
-            // !!!!
-            //mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos, lightOn, lightRotation);
-
-        }
-
+                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s,info.pos);
+                // !!!!
+                //mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos, lightOn, lightRotation);
+            
+        }        
+        
         return;
     }
 
@@ -477,7 +480,7 @@ public class NetworkMgr : MonoBehaviour
                     });
             if (-1 != index)
                 // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentLight(on, rotation);
+                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentLight(on,rotation);
         }
         return;
     }
@@ -508,7 +511,7 @@ public class NetworkMgr : MonoBehaviour
         data.posX = pos.x;
         data.posY = pos.y;
         data.posZ = pos.z;
-
+        
         if (!mPreviousSavedData.IsSame(data))
         {
             MonsterMovePacket packet = new MonsterMovePacket(data);
@@ -530,7 +533,7 @@ public class NetworkMgr : MonoBehaviour
 
         PlayerShoutPacket packet = new PlayerShoutPacket(data);
         SendReliable(packet);
-
+        
         return;
     }
 
@@ -538,6 +541,7 @@ public class NetworkMgr : MonoBehaviour
     {
         return mMonsterCurPos;
     }
+    */
 
     //***************************************************************************************
 
@@ -566,27 +570,27 @@ public class NetworkMgr : MonoBehaviour
     private Dictionary<int, RecvNotifier> m_notifier = new Dictionary<int, RecvNotifier>();
     */
 
-    /*
-public void RegisterReceiveNotification(PacketID id, RecvNotifier notifier)
-{
-    int index = (int)id;
-
-    if (m_notifier.ContainsKey(index))
+        /*
+    public void RegisterReceiveNotification(PacketID id, RecvNotifier notifier)
     {
-        m_notifier.Remove(index);
+        int index = (int)id;
+
+        if (m_notifier.ContainsKey(index))
+        {
+            m_notifier.Remove(index);
+        }
+
+        m_notifier.Add(index, notifier);
     }
 
-    m_notifier.Add(index, notifier);
-}
-
-public void UnregisterReceiveNotification(PacketID id)
-{
-    int index = (int)id;
-
-    if (m_notifier.ContainsKey(index))
+    public void UnregisterReceiveNotification(PacketID id)
     {
-        m_notifier.Remove(index);
+        int index = (int)id;
+
+        if (m_notifier.ContainsKey(index))
+        {
+            m_notifier.Remove(index);
+        }
     }
-}
-*/
+    */
 }

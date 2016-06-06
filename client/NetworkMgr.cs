@@ -144,6 +144,7 @@ public class NetworkMgr : MonoBehaviour {
             mDebugText = "Start::Connect Fail !!";
         else
         {
+            RegisterReceiveNotification(PacketType.SetID, OnReceiveSetIDPacket);
             mNetwork.RegisterEventHandler(OnEventHandling);
             LaunchThread();
         }
@@ -341,6 +342,20 @@ public class NetworkMgr : MonoBehaviour {
             // instance.transform.Find("char_ethan").gameObject.GetComponent<PlayerMovement>().mInstanceID = cloneID;
             instance.transform.gameObject.GetComponent<PlayerMovement>().mInstanceID = cloneID;
         }
+
+        return;
+    }
+
+    private void OnReceiveSetIDPacket(PacketType type, byte[] packetData)
+    {
+        SetIDPacket packet = new SetIDPacket(packetData);
+        SetIDData data = packet.GetPacketData();
+        mMyID = data.id;
+
+        CreatePlayer(data.id, new Vector3(263.0f, -14.0f, -2.0f));
+
+        Debug.Log("NetworkMgr::OnReceiveSetIDPacket::Called!");
+        Debug.Log("NetworkMgr::OnReceiveSetIDPacket::My Id = " + mMyID.ToString());
 
         return;
     }

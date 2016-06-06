@@ -82,7 +82,7 @@ public class NetworkLib
             return false;
         }
 
-        Debug.Log("Connect::Called!!");
+        Debug.Log("Disconnect::Called!!");
         return true;
     }
 

@@ -99,6 +99,7 @@ public class EnemyAI : MonoBehaviour
         connectNetwork = true;
 
         Debug.Log("enter!!!! MonsterReceive!!!");
+        mNetworkMgr.CompeleteConnect();
         return;
     }
 

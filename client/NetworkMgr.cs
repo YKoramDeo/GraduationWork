@@ -110,6 +110,8 @@ public class NetworkMgr : MonoBehaviour {
     private Vector3 mMonsterPatrolPos;
     private GameObject enemy;
 
+    private bool mConnectComplete;
+
     void Awake()
     {
         if (NetworkMgr.mInstance != null)
@@ -117,8 +119,9 @@ public class NetworkMgr : MonoBehaviour {
 
         GetInstance();
         mNetwork = new NetworkLib();
-        mIPBuf = "127.0.0.1";
-        //mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
+        mConnectComplete = false;
+        //mIPBuf = "127.0.0.1";
+        mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
         mPlayerLight = null;
@@ -138,7 +141,7 @@ public class NetworkMgr : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        //GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
+        GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
         Application.runInBackground = true;
         if (!mNetwork.Connect(mIPBuf, (int)NetConfig.SERVER_PORT))
             mDebugText = "Start::Connect Fail !!";
@@ -146,6 +149,7 @@ public class NetworkMgr : MonoBehaviour {
         {
             RegisterReceiveNotification(PacketType.SetID, OnReceiveSetIDPacket);
             RegisterReceiveNotification(PacketType.Connect, OnReceiveConnectPacket);
+            RegisterReceiveNotification(PacketType.Disconnect, OnReceiveDisconnectPacket);
             mNetwork.RegisterEventHandler(OnEventHandling);
             LaunchThread();
         }
@@ -394,6 +398,8 @@ public class NetworkMgr : MonoBehaviour {
 
     public void SendPlayerMovePacket(Vector3 dir, float h, float v, bool s, Vector3 playerPosition)
     {
+        if (!mConnectComplete) return;
+
         PlayerMoveData data = new PlayerMoveData();
         data.id = mMyID;
         data.posX = playerPosition.x;
@@ -418,6 +424,8 @@ public class NetworkMgr : MonoBehaviour {
 
     public void SendMonsterMovePacket(Vector3 pos)
     {
+        if (!mConnectComplete) return;
+
         MonsterMoveData data = new MonsterMoveData();
         data.posX = pos.x;
         data.posY = pos.y;
@@ -435,6 +443,8 @@ public class NetworkMgr : MonoBehaviour {
 
     public void SendPlayerLightPacket(bool on, Quaternion rotation)
     {
+        if (!mConnectComplete) return;
+
         PlayerLightData data = new PlayerLightData();
         data.id = mMyID;
         data.on = on;
@@ -455,6 +465,8 @@ public class NetworkMgr : MonoBehaviour {
 
     public void SendPlayerShoutPacket(bool shouting, Vector3 position)
     {
+        if (!mConnectComplete) return;
+
         PlayerShoutData data = new PlayerShoutData();
         data.id = mMyID;
         data.shouting = shouting;
@@ -481,5 +493,11 @@ public class NetworkMgr : MonoBehaviour {
     public int GetMyID()
     {
         return mMyID;
+    }
+
+    public void CompeleteConnect()
+    {
+        mConnectComplete = true;
+        return;
     }
 }

@@ -132,7 +132,7 @@ void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 		gClientsList[id].player.pos.z = pos.z;
 	}
 
-	//std::cout << "ProcessPacket		:: " << key << " client <= Light Rot(" << rot.x << ", " << rot.y << ", " << rot.z << ")" << std::endl;
+	//std::cout << "ProcessPacket		:: " << key << " client <= Player Pos(" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
 
 	for (int ci = 0; ci < MAX_USER; ++ci)
 	{

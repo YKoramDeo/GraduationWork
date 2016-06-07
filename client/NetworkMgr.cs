@@ -271,34 +271,6 @@ public class NetworkMgr : MonoBehaviour {
 
             mNotifier[(int)packetType]((PacketType)packetType, packetData);
         }
-        // 160606
-        /*
-        switch (packetType)
-        {
-            case (byte)PacketType.SetID:
-                if(mMyID == (int)NetConfig.NIL)
-                    OnReceiveSetIDPacket(packetData);
-                break;
-            case (byte)PacketType.Connect:
-                OnReceiveConnectPacket(packetData);
-                break;
-            case (byte)PacketType.Disconnect:
-                OnReceiveDisconnectPacket(packetData);
-                break;
-            case (byte)PacketType.PlayerMove:
-                OnReceivePlayerMovePacket(packetData);
-                break;
-            case (byte)PacketType.PlayerLight:
-                OnReceivePlayerLightPacket(packetData);
-                break;
-            case (byte)PacketType.PlayerShout:
-                OnReceivePlayerShoutPacket(packetData);
-                break;
-            case (byte)PacketType.MonsterSetInfo:
-                OnReceiveMonsterSetInfo(packetData);
-                break;
-        }
-        */
         return;
     }
 
@@ -314,17 +286,7 @@ public class NetworkMgr : MonoBehaviour {
         else
         {
             GameObject instance = (GameObject)Instantiate(mOtherPlayerPrefab, pos, Quaternion.identity);
-
-            /*
-            instance.transform.Find("Controll_Camera").gameObject.SetActive(false);
-            instance.transform.Find("char_ethan").Find("Player_Camera").gameObject.SetActive(false);
-            instance.transform.Find("char_ethan").Find("OVRCameraController").gameObject.SetActive(false);
-            instance.transform.Find("char_ethan").gameObject.GetComponent<AudioListener>().enabled = false;
-            instance.transform.Find("char_ethan").gameObject.GetComponent<NavMeshAgent>().enabled = true;
-            instance.transform.position = pos - instance.transform.Find("char_ethan").gameObject.transform.position;
-            instance.transform.Find("char_ethan").gameObject.transform.position = pos;
-            */
-            // instance.transform.Find("Controll_Camera").gameObject.SetActive(false);
+            
             instance.transform.Find("Player_Camera").gameObject.SetActive(false);
             instance.transform.Find("OVRCameraController").gameObject.SetActive(false);
             instance.transform.gameObject.GetComponent<AudioListener>().enabled = false;
@@ -337,8 +299,7 @@ public class NetworkMgr : MonoBehaviour {
             otherClientInfo.characterInstance = instance;
 
             mOtherClients.Add(otherClientInfo);
-
-            // instance.transform.Find("char_ethan").gameObject.GetComponent<PlayerMovement>().mInstanceID = cloneID;
+            
             instance.transform.gameObject.GetComponent<PlayerMovement>().mInstanceID = cloneID;
         }
 
@@ -409,87 +370,7 @@ public class NetworkMgr : MonoBehaviour {
         return;
     }
 
-    // 160606
-    /*
-    private void OnReceivePlayerShoutPacket(byte[] packetData)
-    {
-        PlayerShoutPacket packet = new PlayerShoutPacket(packetData);
-        PlayerShoutData data = packet.GetPacketData();
-
-        int id;
-        bool shoutBool;
-        Vector3 otherPlayerPosition;
-
-        id = data.id;
-        shoutBool = data.shouting;
-        otherPlayerPosition.x = data.posX;
-        otherPlayerPosition.y = data.posY;
-        otherPlayerPosition.z = data.posZ;
-
-        if (id != mMyID)
-        {
-            int index = mOtherClients.FindIndex(
-                    delegate (OtherClientInfo i)
-                    {
-                        return i.id == id;
-                    });
-            if (-1 != index)
-                // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentShout(shoutBool, otherPlayerPosition);
-        }
-
-        return;
-    }
-
-    private void OnReceiveSetIDPacket(byte[] packetData)
-    {
-        SetIDPacket packet = new SetIDPacket(packetData);
-        SetIDData data = packet.GetPacketData();
-        mMyID = data.id;
-
-        CreatePlayer(data.id, new Vector3(263.0f, -14.0f, -2.0f));
-
-        SendConnectPacket();
-
-        return;
-    }
-
-    private void SendConnectPacket()
-    {
-        ConnectData data = new ConnectData();
-        data.id = mMyID;
-        data.posX = mPlayerTransform.position.x;
-        data.posY = mPlayerTransform.position.y;
-        data.posZ = mPlayerTransform.position.z;
-
-        ConnectPacket packet = new ConnectPacket(data);
-        SendReliable(packet);
-
-        return;
-    }
-
-    private void OnReceiveConnectPacket(byte[] packetData)
-    {
-        ConnectPacket packet = new ConnectPacket(packetData);
-        ConnectData data = packet.GetPacketData();
-
-        PlayerInfo info = new PlayerInfo();
-        info.id = data.id;
-
-        if (info.id != mMyID)
-        {
-            Debug.Log("OnReceiveCpnnectPacket :: " + info.id + "client connect !");
-            info.pos.x = data.posX;
-            info.pos.y = data.posY;
-            info.pos.z = data.posZ;
-
-            CreatePlayer(info.id, info.pos);
-        }
-
-        return;
-    }
-
-    private void OnReceiveDisconnectPacket(byte[] packetData)
+    private void OnReceiveDisconnectPacket(PacketType type, byte[] packetData)
     {
         DisconnectPacket packet = new DisconnectPacket(packetData);
         DisconnectData data = packet.GetPacketData();
@@ -503,8 +384,7 @@ public class NetworkMgr : MonoBehaviour {
                     });
             if (-1 != index)
             {
-                // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                DestroyObject(mOtherClients[index].characterInstance);
+               DestroyObject(mOtherClients[index].characterInstance);
                 mOtherClients.RemoveAt(index);
             }
         }
@@ -536,42 +416,20 @@ public class NetworkMgr : MonoBehaviour {
         return;
     }
 
-    private void OnReceivePlayerMovePacket(byte[] packetData)
+    public void SendMonsterMovePacket(Vector3 pos)
     {
-        PlayerMovePacket packet = new PlayerMovePacket(packetData);
-        PlayerMoveData data = packet.GetPacketData();
+        MonsterMoveData data = new MonsterMoveData();
+        data.posX = pos.x;
+        data.posY = pos.y;
+        data.posZ = pos.z;
 
-        Vector3 dir = Vector3.zero;
-        float h, v;
-        bool s;
-        PlayerInfo info = new PlayerInfo();
-
-        info.id = data.id;
-        info.pos.x = data.posX;
-        info.pos.y = data.posY;
-        info.pos.z = data.posZ;
-        dir.x = data.dirX;
-        dir.y = data.dirY;
-        dir.z = data.dirZ;
-        h = data.horizental;
-        v = data.vertical;
-        s = data.sneak;
-
-        if (info.id != mMyID)
+        if (!mPreviousSavedData.IsSame(data))
         {
-            int index = mOtherClients.FindIndex(
-                    delegate (OtherClientInfo i)
-                    {
-                        return i.id == info.id;
-                    });
-            if(-1 != index)
-                // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s,info.pos);
-                // !!!!
-                //mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgument(dir, h, v, s, info.pos, lightOn, lightRotation);
-            
-        }        
-        
+            MonsterMovePacket packet = new MonsterMovePacket(data);
+            SendReliable(packet);
+            mPreviousSavedData.SetData(data);
+        }
+
         return;
     }
 
@@ -595,72 +453,6 @@ public class NetworkMgr : MonoBehaviour {
         return;
     }
 
-    private void OnReceivePlayerLightPacket(byte[] packetData)
-    {
-        PlayerLightPacket packet = new PlayerLightPacket(packetData);
-        PlayerLightData data = packet.GetPacketData();
-        int id;
-        bool on;
-        Quaternion rotation;
-
-        id = data.id;
-        on = data.on;
-        rotation.x = data.rotX;
-        rotation.y = data.rotY;
-        rotation.z = data.rotZ;
-        rotation.w = data.rotW;
-
-        if (id != mMyID)
-        {
-            int index = mOtherClients.FindIndex(
-                    delegate (OtherClientInfo i)
-                    {
-                        return i.id == id;
-                    });
-            if (-1 != index)
-                // ToDo : 지금은 인스턴스의 컴포넌트에 직접 접근하여 패킷정보를 전달하지만 후에 최적화로 넘어갈 시 분할 하도록 한다.
-                mOtherClients[index].characterInstance.transform.GetComponent<PlayerMovement>().SetArgumentLight(on,rotation);
-        }
-        return;
-    }
-
-    private void OnReceiveMonsterSetInfo(byte[] packetData)
-    {
-        MonsterSetInfoPacket packet = new MonsterSetInfoPacket(packetData);
-        MonsterSetInfoData data = packet.GetPacketData();
-
-        mMonsterCurPos.x = data.posX;
-        mMonsterCurPos.y = data.posY;
-        mMonsterCurPos.z = data.posZ;
-        mMonsterPatrolPos.x = data.patrolPosX;
-        mMonsterPatrolPos.y = data.patrolPosY;
-        mMonsterPatrolPos.z = data.patrolPosZ;
-
-        enemy.GetComponent<EnemyAI>().SetArgument(mMonsterPatrolPos);
-        enemy.GetComponent<NavMeshAgent>().Warp(mMonsterCurPos);
-        enemy.GetComponent<EnemyAI>().connectNetwork = true;
-
-        Debug.Log("enter!!!! MonsterReceive!!!");
-        return;
-    }
-
-    public void SendMonsterMovePacket(Vector3 pos)
-    {
-        MonsterMoveData data = new MonsterMoveData();
-        data.posX = pos.x;
-        data.posY = pos.y;
-        data.posZ = pos.z;
-        
-        if (!mPreviousSavedData.IsSame(data))
-        {
-            MonsterMovePacket packet = new MonsterMovePacket(data);
-            SendReliable(packet);
-            mPreviousSavedData.SetData(data);
-        }
-
-        return;
-    }
-
     public void SendPlayerShoutPacket(bool shouting, Vector3 position)
     {
         PlayerShoutData data = new PlayerShoutData();
@@ -672,17 +464,9 @@ public class NetworkMgr : MonoBehaviour {
 
         PlayerShoutPacket packet = new PlayerShoutPacket(data);
         SendReliable(packet);
-        
+
         return;
     }
-
-    public Vector3 GetMonsterPosition()
-    {
-        return mMonsterCurPos;
-    }
-    */
-
-    //***************************************************************************************
 
     public static NetworkMgr GetInstance()
     {
@@ -698,38 +482,4 @@ public class NetworkMgr : MonoBehaviour {
     {
         return mMyID;
     }
-
-    //***************************************************************************************
-
-    // ToDo : 이를 활용한 다른 컴포넌트에 패킷 정보를 전달하는 부분을 보완해야 할 것.
-    /*
-    // 수신 패킷 처리함수 델리게이트. 
-    public delegate void RecvNotifier(PacketID id, byte[] data);
-    // 수신 패킷 분배 해시 테이블.
-    private Dictionary<int, RecvNotifier> m_notifier = new Dictionary<int, RecvNotifier>();
-    */
-
-        /*
-    public void RegisterReceiveNotification(PacketID id, RecvNotifier notifier)
-    {
-        int index = (int)id;
-
-        if (m_notifier.ContainsKey(index))
-        {
-            m_notifier.Remove(index);
-        }
-
-        m_notifier.Add(index, notifier);
-    }
-
-    public void UnregisterReceiveNotification(PacketID id)
-    {
-        int index = (int)id;
-
-        if (m_notifier.ContainsKey(index))
-        {
-            m_notifier.Remove(index);
-        }
-    }
-    */
 }

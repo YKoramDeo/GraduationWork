@@ -5,13 +5,16 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Threading;
 
-public class NetworkMgr : MonoBehaviour {
+public class NetworkMgr : MonoBehaviour
+{
 
     public static NetworkMgr mInstance = null;
 
     private NetworkLib mNetwork;
     private string mIPBuf;
     private Thread mThread;
+    private bool mConnecting;
+    private bool mConnectSyncComplete;
 
     private Transform mPlayerTransform;
     private GameObject mPlayerLight;
@@ -27,7 +30,8 @@ public class NetworkMgr : MonoBehaviour {
     public List<OtherClientInfo> mOtherClients;
 
     private string mDebugText;
-    
+
+    /*
     private class PreviousSavedData
     {
         private PlayerMoveData playerMoveData;
@@ -73,7 +77,7 @@ public class NetworkMgr : MonoBehaviour {
             retval &= (Math.Abs(monsterMoveData.posX - curData.posX) < 1.0f) ? true : false;
             retval &= (Math.Abs(monsterMoveData.posY - curData.posY) < 1.0f) ? true : false;
             retval &= (Math.Abs(monsterMoveData.posZ - curData.posZ) < 1.0f) ? true : false;
-            
+
             return retval;
         }
 
@@ -96,6 +100,7 @@ public class NetworkMgr : MonoBehaviour {
         }
     };
     private PreviousSavedData mPreviousSavedData;
+    */
 
     // 수신 패킷 처리함수 델리게이트.
     public delegate void RecvNotifier(PacketType id, byte[] data);
@@ -110,8 +115,6 @@ public class NetworkMgr : MonoBehaviour {
     private Vector3 mMonsterPatrolPos;
     private GameObject enemy;
 
-    private bool mConnectComplete;
-
     void Awake()
     {
         if (NetworkMgr.mInstance != null)
@@ -119,17 +122,18 @@ public class NetworkMgr : MonoBehaviour {
 
         GetInstance();
         mNetwork = new NetworkLib();
-        mConnectComplete = false;
+        mConnectSyncComplete = false;
+        mConnecting = false;
         //mIPBuf = "127.0.0.1";
         mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
         mPlayerLight = null;
 
-        mMyID = (int)NetConfig.NIL; 
+        mMyID = (int)NetConfig.NIL;
         mOtherClients = new List<OtherClientInfo>();
         mDebugText = "";
-        mPreviousSavedData = new PreviousSavedData();
+//        mPreviousSavedData = new PreviousSavedData();
 
         mNotifier = new Dictionary<int, RecvNotifier>();
 
@@ -160,15 +164,16 @@ public class NetworkMgr : MonoBehaviour {
     {
         byte[] packet = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
 
-       if(mNetwork.Receive(ref packet, packet.Length) != -1)
-             ReceivePacket(packet);
+        if (mNetwork.Receive(ref packet, packet.Length) != -1)
+            ReceivePacket(packet);
     }
 
     void OnApplicationQuit()
     {
         //SendDisconnectPacket();
-        mNetwork.Disconnect();
+        mConnecting = false;
         mThread.Join();
+        mNetwork.Disconnect();
     }
 
     void OnGUI()
@@ -178,13 +183,28 @@ public class NetworkMgr : MonoBehaviour {
 
     private void LaunchThread()
     {
-        try {
-            mThread = new Thread(new ThreadStart(mNetwork.Dispatch));
+        try
+        {
+            mThread = new Thread(new ThreadStart(Dispatch));
             mThread.Start();
+            mConnecting = true;
         }
-        catch {
+        catch
+        {
             Debug.Log("Cannot launch thread.");
         }
+        return;
+    }
+
+    private void Dispatch()
+    {
+        while (mConnecting)
+        {
+            mNetwork.Dispatch();
+
+            Thread.Sleep(5);
+        }
+
         return;
     }
 
@@ -290,7 +310,7 @@ public class NetworkMgr : MonoBehaviour {
         else
         {
             GameObject instance = (GameObject)Instantiate(mOtherPlayerPrefab, pos, Quaternion.identity);
-            
+
             instance.transform.Find("Player_Camera").gameObject.SetActive(false);
             instance.transform.Find("OVRCameraController").gameObject.SetActive(false);
             instance.transform.gameObject.GetComponent<AudioListener>().enabled = false;
@@ -303,7 +323,7 @@ public class NetworkMgr : MonoBehaviour {
             otherClientInfo.characterInstance = instance;
 
             mOtherClients.Add(otherClientInfo);
-            
+
             instance.transform.gameObject.GetComponent<PlayerMovement>().mInstanceID = cloneID;
         }
 
@@ -327,7 +347,8 @@ public class NetworkMgr : MonoBehaviour {
 
     private bool SendConnectPacket()
     {
-        try {
+        try
+        {
             ConnectData data = new ConnectData();
             data.id = mMyID;
             data.posX = mPlayerTransform.position.x;
@@ -339,7 +360,7 @@ public class NetworkMgr : MonoBehaviour {
         }
         catch
         {
-            if(mHandler != null)
+            if (mHandler != null)
             {
                 NetEventState state = new NetEventState();
                 state.mType = NetEventType.SendError;
@@ -388,7 +409,7 @@ public class NetworkMgr : MonoBehaviour {
                     });
             if (-1 != index)
             {
-               DestroyObject(mOtherClients[index].characterInstance);
+                DestroyObject(mOtherClients[index].characterInstance);
                 mOtherClients.RemoveAt(index);
             }
         }
@@ -398,7 +419,7 @@ public class NetworkMgr : MonoBehaviour {
 
     public void SendPlayerMovePacket(Vector3 dir, float h, float v, bool s, Vector3 playerPosition)
     {
-        if (!mConnectComplete) return;
+        if (!mConnectSyncComplete) return;
 
         PlayerMoveData data = new PlayerMoveData();
         data.id = mMyID;
@@ -412,38 +433,46 @@ public class NetworkMgr : MonoBehaviour {
         data.vertical = v;
         data.sneak = s;
 
+        /*
         if (!mPreviousSavedData.IsSame(data))
         {
             PlayerMovePacket packet = new PlayerMovePacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
         }
+        */
+        PlayerMovePacket packet = new PlayerMovePacket(data);
+        SendReliable(packet);
 
         return;
     }
 
     public void SendMonsterMovePacket(Vector3 pos)
     {
-        if (!mConnectComplete) return;
+        if (!mConnectSyncComplete) return;
 
         MonsterMoveData data = new MonsterMoveData();
         data.posX = pos.x;
         data.posY = pos.y;
         data.posZ = pos.z;
 
+        /*
         if (!mPreviousSavedData.IsSame(data))
         {
             MonsterMovePacket packet = new MonsterMovePacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
         }
+        */
+        MonsterMovePacket packet = new MonsterMovePacket(data);
+        SendReliable(packet);
 
         return;
     }
 
     public void SendPlayerLightPacket(bool on, Quaternion rotation)
     {
-        if (!mConnectComplete) return;
+        if (!mConnectSyncComplete) return;
 
         PlayerLightData data = new PlayerLightData();
         data.id = mMyID;
@@ -453,19 +482,23 @@ public class NetworkMgr : MonoBehaviour {
         data.rotZ = rotation.z;
         data.rotW = rotation.w;
 
+        /*
         if (!mPreviousSavedData.IsSame(data))
         {
             PlayerLightPacket packet = new PlayerLightPacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
         }
+        */
+        PlayerLightPacket packet = new PlayerLightPacket(data);
+        SendReliable(packet);
 
         return;
     }
 
     public void SendPlayerShoutPacket(bool shouting, Vector3 position)
     {
-        if (!mConnectComplete) return;
+        if (!mConnectSyncComplete) return;
 
         PlayerShoutData data = new PlayerShoutData();
         data.id = mMyID;
@@ -497,7 +530,7 @@ public class NetworkMgr : MonoBehaviour {
 
     public void CompeleteConnect()
     {
-        mConnectComplete = true;
+        mConnectSyncComplete = true;
         return;
     }
 }

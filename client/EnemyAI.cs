@@ -43,7 +43,7 @@ public class EnemyAI : MonoBehaviour
     {
         lastPlayerSighting = GameObject.FindGameObjectWithTag(Tags.gameController).GetComponent<LastPlayerSighting>();
         mNetworkMgr = NetworkMgr.GetInstance();
-        mNetworkMgr.RegisterReceiveNotification(PacketType.MonsterSetInfo,OnReceiveMonsterSetInfo);
+        mNetworkMgr.RegisterReceiveNotification(PacketType.MonsterSetInfo, OnReceiveMonsterSetInfo);
         //Get 몬스터의 현재 위치 서버로 부터 받는다.
         //transform.position = mNetworkMgr.GetMonsterPosition();
         //nav.Warp(mNetworkMgr.GetMonsterPosition());
@@ -53,7 +53,7 @@ public class EnemyAI : MonoBehaviour
     {
         // If the player is in sight and is alive...
         //if (enemySight.playerInSight && playerHealth.health > 0f && Vector3.Distance(enemySight.personalLastSighting, transform.position)<2)
-        if(playerHealth.health == 0f || enemyAnim.frontHitBool == true || enemyAnim.backHitBool == true)
+        if (playerHealth.health == 0f || enemyAnim.frontHitBool == true || enemyAnim.backHitBool == true)
             // ... bite.
             Bitting();
 
@@ -61,7 +61,7 @@ public class EnemyAI : MonoBehaviour
         else if (enemySight.personalLastSighting != lastPlayerSighting.resetPosition && playerHealth.health > 0f)
             // ... chase.
             Chasing();
-        
+
         // Otherwise...
         else
             // ... patrol.
@@ -74,7 +74,7 @@ public class EnemyAI : MonoBehaviour
 
         if (0 == mFrameCount % 10 && connectNetwork)
         {
-            mNetworkMgr.SendMonsterMovePacket(transform.position);  //몬스터 현재 위치 보냄
+            //mNetworkMgr.SendMonsterMovePacket(transform.position);  //몬스터 현재 위치 보냄
             mFrameCount = 0;
         }
     }
@@ -108,7 +108,7 @@ public class EnemyAI : MonoBehaviour
         patrollBool = false;
         // Stop the enemy where it is.
         nav.Stop();
-       // Debug.Log("Now Bitting");
+        // Debug.Log("Now Bitting");
     }
 
 
@@ -192,8 +192,8 @@ public class EnemyAI : MonoBehaviour
         */
 
             nav.destination = patrollpos;
-           // nav.SetDestination(nav.destination);
-           // Debug.Log("Set Destination");
+            // nav.SetDestination(nav.destination);
+            // Debug.Log("Set Destination");
         }
     }
 }

@@ -3,10 +3,10 @@ using System.Net.Sockets;
 
 public enum NetConfig
 {
-    MAX_PLAYER      = 4,
-    SERVER_PORT     = 4000,
+    MAX_PLAYER = 4,
+    SERVER_PORT = 4000,
     MAX_BUFFER_SIZE = 1400,
-    NIL             = -9999
+    NIL = -9999
 }
 
 public enum NetEventType
@@ -36,7 +36,7 @@ public struct PlayerInfo
     public Quaternion rot;
     public bool lightOn;
     public Quaternion lightRotation;
-    public Socket socket;   
+    public Socket socket;
 }
 
 public interface IPacket<T>

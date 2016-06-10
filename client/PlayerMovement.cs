@@ -9,7 +9,7 @@ public class PlayerMovement : MonoBehaviour
     public Transform m_Cam;                  // A reference to the main camera in the scenes transform
     private Vector3 m_CamForward;             // The current forward direction of the camera
     private Vector3 m_Move;
-    
+
     private Animator anim;              // Reference to the animator component.
     private HashIDs hash;               // Reference to the HashIDs.
     private Transform enemy;
@@ -65,7 +65,7 @@ public class PlayerMovement : MonoBehaviour
         mInstanceID = (int)NetConfig.NIL;
         mFrameCount = 0;
 
-        path= new NavMeshPath();
+        path = new NavMeshPath();
 
         otherPlayerPos = transform.position;
         pre_otherPlayerPos = Vector3.zero;
@@ -89,6 +89,7 @@ public class PlayerMovement : MonoBehaviour
 
         mNetworkMgr.RegisterReceiveNotification(PacketType.PlayerMove, OnReceivePlayerMovePacket);
         mNetworkMgr.RegisterReceiveNotification(PacketType.PlayerLight, OnReceivePlayerLightPacket);
+        StartCoroutine(SendPacketFunc());
     }
 
     void FixedUpdate()
@@ -99,10 +100,10 @@ public class PlayerMovement : MonoBehaviour
 
             // Cache the inputs.
             //키보드 부분
-             h = Input.GetAxis("Horizontal");
-             v = Input.GetAxis("Vertical");
-             sneak = Input.GetButton("Sneak");
-             flashLight = Input.GetButton("FlashLight");
+            h = Input.GetAxis("Horizontal");
+            v = Input.GetAxis("Vertical");
+            sneak = Input.GetButton("Sneak");
+            flashLight = Input.GetButton("FlashLight");
             m_Cam = controllerCamera.transform;
 
             //스마트폰 부분
@@ -123,7 +124,7 @@ public class PlayerMovement : MonoBehaviour
             }
 
 
-            if(flashLight)
+            if (flashLight)
                 sendFlashLightrotation = flashLightVec.transform.rotation;
 
             m_CamForward = Vector3.Scale(m_Cam.forward, new Vector3(1, 0, 1)).normalized;
@@ -131,12 +132,14 @@ public class PlayerMovement : MonoBehaviour
 
             MovementManagement(h, v, sneak, flashLight, m_Move);
 
+            /*
             if (0 == mFrameCount % 10)
             {
                 mNetworkMgr.SendPlayerMovePacket(m_Move, h, v, sneak, transform.position);
                 mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
                 mFrameCount = 0;
             }
+            */
         }
 
         else //Other Player의 동작
@@ -154,6 +157,25 @@ public class PlayerMovement : MonoBehaviour
             anim.SetBool(hash.shoutingBool, shout);
 
             AudioManagement(shout);
+        }
+    }
+
+    private IEnumerator SendPacketFunc()
+    {
+        int frame_count = 0;
+        while (true)
+        {
+            if (frame_count % 10 == 0)
+            {
+                if (Input.GetKeyDown(KeyCode.W) || Input.GetKey(KeyCode.W)
+                    || Input.GetKeyDown(KeyCode.S) || Input.GetKey(KeyCode.S)
+                    || Input.GetKeyDown(KeyCode.A) || Input.GetKey(KeyCode.A)
+                    || Input.GetKeyDown(KeyCode.D) || Input.GetKey(KeyCode.D))
+                    mNetworkMgr.SendPlayerMovePacket(m_Move, h, v, sneak, transform.position);
+                //mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
+                //yield return new WaitForSeconds(0.3f);
+            }
+            yield return null;
         }
     }
 
@@ -268,7 +290,7 @@ public class PlayerMovement : MonoBehaviour
                 pre_otherPlayerPos = otherPlayerPos;
                 // Create a path and set it based on a target position.
                 if (nav.enabled)
-                    nav.CalculatePath(otherPlayerPos, path);   
+                    nav.CalculatePath(otherPlayerPos, path);
             }
 
             if (path.corners.Length != 0)
@@ -298,7 +320,7 @@ public class PlayerMovement : MonoBehaviour
                     if ((i + 1) > allWayPoints.Length || (i + 1) == allWayPoints.Length)
                         Debug.Log("error");
 
-                    if((int)otherDirection.x != 0 && (int)otherDirection.y != 0 && (int)otherDirection.z != 0)
+                    if ((int)otherDirection.x != 0 && (int)otherDirection.y != 0 && (int)otherDirection.z != 0)
                         MovementManagement(1f, 1f, sneak, flashLight, otherDirection);
                 }
 
@@ -308,7 +330,7 @@ public class PlayerMovement : MonoBehaviour
                 if (distance < 0.5f)
                 {
                     i++;
-                    if (i == (allWayPoints.Length-1))
+                    if (i == (allWayPoints.Length - 1))
                     {
                         MovementManagement(0, 0, sneak, flashLight, otherDirection);
                         i = 0;
@@ -422,10 +444,10 @@ public class PlayerMovement : MonoBehaviour
                     enemySight.playerInSight = true;
                     lastPlayerSight.position = transform.position;
                 }
-                
-                mNetworkMgr.SendPlayerShoutPacket(shout, transform.position);
+
+                //mNetworkMgr.SendPlayerShoutPacket(shout, transform.position);
             }
         }
- 
+
     }
 }

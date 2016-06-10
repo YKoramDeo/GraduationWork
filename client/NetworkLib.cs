@@ -8,8 +8,6 @@ public class NetworkLib
     private PacketQueue mSendQueue;
     private PacketQueue mRecvQueue;
 
-    private bool mConnecting;
-
     // 이벤트 통지 델리게이트.
     public delegate void EventHandler(NetEventState state);
     // 이벤트 핸들러.
@@ -24,8 +22,6 @@ public class NetworkLib
         mRecvQueue = new PacketQueue();
 
         mLockObj = new System.Object();
-
-        mConnecting = false;
     }
 
     public bool Connect(string address, int port)
@@ -46,14 +42,14 @@ public class NetworkLib
             return false;
         }
 
-        mConnecting = true;
         Debug.Log("Connect::Called!!");
         return true;
     }
 
     public bool Disconnect()
     {
-        try {
+        try
+        {
             if (null != mSocket)
             {
                 lock (mLockObj)
@@ -75,9 +71,9 @@ public class NetworkLib
                 mHandler(state);
             }
 
-            mConnecting = false;
         }
-        catch {
+        catch
+        {
             Debug.Log("Network::Disonnect fail!");
             return false;
         }
@@ -89,17 +85,12 @@ public class NetworkLib
     // thread start function
     public void Dispatch()
     {
-        while(mConnecting)
+        Debug.Log("Dispatch::Running!");
+        lock (mLockObj)
         {
-            Debug.Log("Dispatch::Running!");
-            lock (mLockObj)
-            {
-                DispatchSend();
+            DispatchSend();
 
-                DispatchReceive();
-            }
-
-            Thread.Sleep(5);
+            DispatchReceive();
         }
 
         return;
@@ -109,7 +100,8 @@ public class NetworkLib
     {
         if (null == mSocket) return;
 
-        try {
+        try
+        {
             byte[] buffer = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
 
             int nSendSize = mSendQueue.Dequeue(ref buffer, buffer.Length);
@@ -120,7 +112,8 @@ public class NetworkLib
                 nSendSize = mSendQueue.Dequeue(ref buffer, buffer.Length);
             }
         }
-        catch {
+        catch
+        {
             if (mHandler != null)
             {
                 NetEventState state = new NetEventState();
@@ -136,7 +129,8 @@ public class NetworkLib
     {
         if (null == mSocket) return;
 
-        try {
+        try
+        {
             if (mSocket.Poll(0, SelectMode.SelectRead))
             {
                 byte[] buffer = new byte[(int)NetConfig.MAX_BUFFER_SIZE];
@@ -152,7 +146,8 @@ public class NetworkLib
                 }
             }
         }
-        catch {
+        catch
+        {
             if (mHandler != null)
             {
                 NetEventState state = new NetEventState();

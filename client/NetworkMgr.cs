@@ -30,8 +30,7 @@ public class NetworkMgr : MonoBehaviour
     public List<OtherClientInfo> mOtherClients;
 
     private string mDebugText;
-
-    /*
+    
     private class PreviousSavedData
     {
         private PlayerMoveData playerMoveData;
@@ -62,10 +61,10 @@ public class NetworkMgr : MonoBehaviour
 
             retval &= (playerLightData.id == curData.id) ? true : false;
             retval &= (playerLightData.on == curData.on) ? true : false;
-            retval &= (Math.Abs(playerLightData.rotX - curData.rotX) < 0.5f) ? true : false;
-            retval &= (Math.Abs(playerLightData.rotY - curData.rotY) < 0.5f) ? true : false;
-            retval &= (Math.Abs(playerLightData.rotZ - curData.rotZ) < 0.5f) ? true : false;
-            retval &= (Math.Abs(playerLightData.rotW - curData.rotW) < 0.5f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotX - curData.rotX) < 0.3f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotY - curData.rotY) < 0.3f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotZ - curData.rotZ) < 0.3f) ? true : false;
+            retval &= (Math.Abs(playerLightData.rotW - curData.rotW) < 0.3f) ? true : false;
 
             return retval;
         }
@@ -100,7 +99,7 @@ public class NetworkMgr : MonoBehaviour
         }
     };
     private PreviousSavedData mPreviousSavedData;
-    */
+    
 
     // 수신 패킷 처리함수 델리게이트.
     public delegate void RecvNotifier(PacketType id, byte[] data);
@@ -124,7 +123,7 @@ public class NetworkMgr : MonoBehaviour
         mNetwork = new NetworkLib();
         mConnectSyncComplete = false;
         mConnecting = false;
-        //mIPBuf = "127.0.0.1";
+//        mIPBuf = "127.0.0.1";
         mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
@@ -133,7 +132,7 @@ public class NetworkMgr : MonoBehaviour
         mMyID = (int)NetConfig.NIL;
         mOtherClients = new List<OtherClientInfo>();
         mDebugText = "";
-//        mPreviousSavedData = new PreviousSavedData();
+        mPreviousSavedData = new PreviousSavedData();
 
         mNotifier = new Dictionary<int, RecvNotifier>();
 
@@ -170,7 +169,6 @@ public class NetworkMgr : MonoBehaviour
 
     void OnApplicationQuit()
     {
-        //SendDisconnectPacket();
         mConnecting = false;
         mThread.Join();
         mNetwork.Disconnect();
@@ -433,17 +431,12 @@ public class NetworkMgr : MonoBehaviour
         data.vertical = v;
         data.sneak = s;
 
-        /*
         if (!mPreviousSavedData.IsSame(data))
         {
             PlayerMovePacket packet = new PlayerMovePacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
         }
-        */
-        PlayerMovePacket packet = new PlayerMovePacket(data);
-        SendReliable(packet);
-
         return;
     }
 
@@ -482,16 +475,13 @@ public class NetworkMgr : MonoBehaviour
         data.rotZ = rotation.z;
         data.rotW = rotation.w;
 
-        /*
         if (!mPreviousSavedData.IsSame(data))
         {
+            Debug.Log(data.id + " : " + data.on + ", (" + data.rotX + ", " + data.rotY + ", " + data.rotZ + ", " + data.rotW + ")");
             PlayerLightPacket packet = new PlayerLightPacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
         }
-        */
-        PlayerLightPacket packet = new PlayerLightPacket(data);
-        SendReliable(packet);
 
         return;
     }

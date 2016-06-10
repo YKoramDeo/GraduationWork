@@ -89,13 +89,18 @@ public class PlayerMovement : MonoBehaviour
 
         mNetworkMgr.RegisterReceiveNotification(PacketType.PlayerMove, OnReceivePlayerMovePacket);
         mNetworkMgr.RegisterReceiveNotification(PacketType.PlayerLight, OnReceivePlayerLightPacket);
-        StartCoroutine(SendPacketFunc());
+
+        if (mNetworkMgr.GetMyID() == mInstanceID)
+        {
+            StartCoroutine(SendPacketFunc());
+        }
     }
 
     void FixedUpdate()
     {
         if (mNetworkMgr.GetMyID() == mInstanceID)
         {
+
             mFrameCount++;
 
             // Cache the inputs.
@@ -132,14 +137,6 @@ public class PlayerMovement : MonoBehaviour
 
             MovementManagement(h, v, sneak, flashLight, m_Move);
 
-            /*
-            if (0 == mFrameCount % 10)
-            {
-                mNetworkMgr.SendPlayerMovePacket(m_Move, h, v, sneak, transform.position);
-                mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
-                mFrameCount = 0;
-            }
-            */
         }
 
         else //Other Player의 동작
@@ -172,8 +169,9 @@ public class PlayerMovement : MonoBehaviour
                     || Input.GetKeyDown(KeyCode.A) || Input.GetKey(KeyCode.A)
                     || Input.GetKeyDown(KeyCode.D) || Input.GetKey(KeyCode.D))
                     mNetworkMgr.SendPlayerMovePacket(m_Move, h, v, sneak, transform.position);
-                //mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
-                //yield return new WaitForSeconds(0.3f);
+                
+                if(Input.GetMouseButtonDown(0) || Input.GetMouseButton(0) || Input.GetMouseButtonUp(0))
+                    mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
             }
             yield return null;
         }
@@ -445,7 +443,7 @@ public class PlayerMovement : MonoBehaviour
                     lastPlayerSight.position = transform.position;
                 }
 
-                //mNetworkMgr.SendPlayerShoutPacket(shout, transform.position);
+                mNetworkMgr.SendPlayerShoutPacket(shout, transform.position);
             }
         }
 

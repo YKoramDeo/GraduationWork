@@ -57,29 +57,29 @@ void ProcessPacket(int key, unsigned char *packet)
 	{
 	case (BYTE)PacketType::Connect:
 		// Connect 동기화 하는 Packet
-		std::cout << "ProcessPacket::Connect::Called!!" << std::endl;
+		std::cout << key <<" ProcessPacket::Connect::Called!!" << std::endl;
 		OnReceivePacket::Connect(key, packet);
 		SendMonsterSetInfoPacket(key);
 		break;
 	case (BYTE)PacketType::PlayerMove:
 		count++;
-		std::cout << "ProcessPacket::PlayerMove::Called!! " << count << std::endl;
+		std::cout << key << " ProcessPacket::PlayerMove::Called!! " << count << std::endl;
 		OnReceivePacket::PlayerMove(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerLight:
-		std::cout << "ProcessPacket::PlayerLight::Called!!" << std::endl;
+		std::cout << key << " ProcessPacket::PlayerLight::Called!!" << std::endl;
 		OnReceivePacket::PlayerLight(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerShout:
-		std::cout << "ProcessPacket::PlayerShout::Called!!" << std::endl;
+		std::cout << key << " ProcessPacket::PlayerShout::Called!!" << std::endl;
 		OnReceivePacket::PlayerShout(key, packet);
 		break;
 	case (BYTE)PacketType::MonsterMove:
-		std::cout << "ProcessPacket::MonsterMove::Called!!" << std::endl;
+		std::cout << key << " ProcessPacket::MonsterMove::Called!!" << std::endl;
 		OnReceivePacket::MonsterMove(key, packet);
 		break;
 	default:
-		std::cout << "Unknown Packet Type Detected" << std::endl;
+		std::cout << key << " Unknown Packet Type Detected" << std::endl;
 		return;
 	}
 

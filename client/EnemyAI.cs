@@ -75,7 +75,10 @@ public class EnemyAI : MonoBehaviour
         while (true)
         {
             if (frame_count % 10 == 0)
+            {
+                Debug.Log("Monster Pos = (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z);
                 mNetworkMgr.SendMonsterMovePacket(transform.position);
+            }
             yield return null;
         }
     }

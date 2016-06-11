@@ -73,9 +73,9 @@ public class NetworkMgr : MonoBehaviour
         {
             bool retval = true;
 
-            retval &= (Math.Abs(monsterMoveData.posX - curData.posX) < 1.0f) ? true : false;
-            retval &= (Math.Abs(monsterMoveData.posY - curData.posY) < 1.0f) ? true : false;
-            retval &= (Math.Abs(monsterMoveData.posZ - curData.posZ) < 1.0f) ? true : false;
+            retval &= (Math.Abs(monsterMoveData.posX - curData.posX) < 2.0f) ? true : false;
+            retval &= (Math.Abs(monsterMoveData.posY - curData.posY) < 2.0f) ? true : false;
+            retval &= (Math.Abs(monsterMoveData.posZ - curData.posZ) < 2.0f) ? true : false;
 
             return retval;
         }
@@ -123,8 +123,8 @@ public class NetworkMgr : MonoBehaviour
         mNetwork = new NetworkLib();
         mConnectSyncComplete = false;
         mConnecting = false;
-//        mIPBuf = "127.0.0.1";
-        mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
+        mIPBuf = "127.0.0.1";
+//        mIPBuf = GameObject.FindGameObjectWithTag("InputIP").GetComponent<NetworkInpormation>().serverIP;
 
         mPlayerTransform = null;
         mPlayerLight = null;
@@ -144,7 +144,7 @@ public class NetworkMgr : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
+//        GameObject.FindGameObjectWithTag("InputIP").SetActive(false);
         Application.runInBackground = true;
         if (!mNetwork.Connect(mIPBuf, (int)NetConfig.SERVER_PORT))
             mDebugText = "Start::Connect Fail !!";

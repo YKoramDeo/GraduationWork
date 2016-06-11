@@ -43,7 +43,7 @@ void InitializeServer(void)
 	//					: 시스템이 지원하는 윈속 최상위 버전 등)를 얻을 수 있음. 하지만 실제로 이런 정보 사용 X
 	if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0)
 	{
-		std::cout << "InitializeServer::WSAStartup Fail !!" << std::endl;
+		DisplayDebugText("InitializeServer::WSAStartup Fail !!");
 		exit(1);
 	}
 
@@ -56,7 +56,7 @@ void InitializeServer(void)
 	ghIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 0);
 	if (NULL == ghIOCP)
 	{
-		std::cout << "InitializeServer::CreateIoCompletionPort Fail !!" << std::endl;
+		DisplayDebugText("InitializeServer::CreateIoCompletionPort Fail !!");
 		exit(1);
 	}
 
@@ -72,7 +72,7 @@ void StopServer(void)
 	}
 
 	WSACleanup();
-	std::cout << "Stop Server::Called!!" << std::endl;
+	DisplayDebugText("Stop Server::Called!!");
 	return;
 }
 
@@ -111,7 +111,8 @@ void WorkerThreadFunc(void)
 
 				gClientsList[key].isConnect = false;
 
-				std::cout << "WorkerThreadFunc	::Disconnect " << key << " client. :(" << std::endl;
+				std::string debugText = "WorkerThreadFunc	::Disconnect " + std::to_string(key) + " client. :(";
+				DisplayDebugText(debugText);
 			}
 			continue;
 		}
@@ -120,7 +121,6 @@ void WorkerThreadFunc(void)
 
 			unsigned char *buf_ptr = overlap->buffer;
 			int remained = ioSize;
-//			std::cout << "WorkerThreadFunc	:: " << (int)buf_ptr[1] << " Send Packet io Size : " << ioSize << std::endl;
 			while (0 < remained)
 			{
 				if (0 == gClientsList[key].recvOverlap.packetSize)
@@ -171,11 +171,14 @@ void WorkerThreadFunc(void)
 			if (BeCompeletedSendPacket(packetType, packetSize))
 				delete overlap;
 			else
-				std::cout << "WorkerThreadFunc:: "<< key <<" client don't send " << packetType << "No. packet" << std::endl;
+			{
+				std::string debugText = "WorkerThreadFunc:: " + std::to_string(key) + " client don't send " + std::to_string(packetType) + "No. packet";
+				DisplayDebugText(debugText);
+			}
 		}
 		else
 		{
-			std::cout << "WorkerThreadFunc::Unknown Event on worker_thread" << std::endl;
+			DisplayDebugText("WorkerThreadFunc::Unknown Event on worker_thread");
 			continue;
 		}
 	}
@@ -257,7 +260,7 @@ void AcceptThreadFunc(void)
 
 		if (-1 == newID)
 		{
-			std::cout << "AcceptThread::Maximum User Number fail !!" << std::endl;
+			DisplayDebugText("AcceptThread::Maximum User Number fail !!");
 			closesocket(newClientSocket);
 			continue;
 		}
@@ -310,7 +313,8 @@ void AcceptThreadFunc(void)
 		}
 
 		// Output
-		std::cout << "AcceptThreadFunc	:: " << newID << " client Accept Success !!" << std::endl;
+		std::string debugText = "AcceptThreadFunc	:: " + std::to_string(newID) + " client Accept Success !!";
+		DisplayDebugText(debugText);
 	}
 
 	return;

@@ -25,6 +25,7 @@
 #include <Windows.h>
 #include <WinSock2.h>
 #include <iostream>
+#include <string>
 #include <locale>
 #include <random>
 

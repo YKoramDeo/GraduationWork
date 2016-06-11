@@ -53,41 +53,45 @@ void ProcessPacket(int key, unsigned char *packet)
 	static int count = 0;
 	unsigned char packetType = packet[1];
 
+	std::string debugText = "";
+
 	switch (packetType)
 	{
 	case (BYTE)PacketType::Connect:
 		// Connect 동기화 하는 Packet
-		std::cout << key <<" ProcessPacket::Connect::Called!!" << std::endl;
+		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
 		OnReceivePacket::Connect(key, packet);
 		SendMonsterSetInfoPacket(key);
 		break;
 	case (BYTE)PacketType::PlayerMove:
-		count++;
-		std::cout << key << " ProcessPacket::PlayerMove::Called!! " << count << std::endl;
+		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
 		OnReceivePacket::PlayerMove(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerLight:
-		std::cout << key << " ProcessPacket::PlayerLight::Called!!" << std::endl;
+		debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
 		OnReceivePacket::PlayerLight(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerShout:
-		std::cout << key << " ProcessPacket::PlayerShout::Called!!" << std::endl;
+		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
 		OnReceivePacket::PlayerShout(key, packet);
 		break;
 	case (BYTE)PacketType::MonsterMove:
-		std::cout << key << " ProcessPacket::MonsterMove::Called!!" << std::endl;
+		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
 		OnReceivePacket::MonsterMove(key, packet);
 		break;
 	default:
-		std::cout << key << " Unknown Packet Type Detected" << std::endl;
+		debugText = std::to_string(key) + " ProcessPacket::Unknown Packet Type Detected";
 		return;
 	}
+	DisplayDebugText(debugText);
 
 	return;
 }
 
 void OnReceivePacket::Connect(int key, unsigned char* packet)
 {
+	std::string debugText = "";
+
 	// 다른 클라이언트에게 새로운 클라이언트 알림
 	for (int ci = 0; ci < MAX_USER; ++ci)
 	{
@@ -95,7 +99,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		if (ci == key) continue;
 		SendPacket(ci, packet);
 
-		std::cout << "ProcessPacket		:: " << ci << " client <= " << key << " client data" << std::endl;
+		debugText = "ProcessPacket		:: " + std::to_string(ci) + " client <= " + std::to_string(key) + " client data";
+		DisplayDebugText(debugText);
 	}
 
 	// 새로 들어온 클라이언트에게 이미 들어와있던 플레이어 정보들을 넘김
@@ -112,9 +117,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		preOtherPlayerPacket.posZ = gClientsList[ci].player.pos.z;
 		SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
 
-		std::cout << "ProcessPacket		:: " << key << " client <= " << ci << " client data" << std::endl;
-		std::cout << "ProcessPacket		:: " << key << " client <= " 
-			<< ci << " (" << gClientsList[ci].player.pos.x << ", " << gClientsList[ci].player.pos.y << ", "<< gClientsList[ci].player.pos.z<< ")" << std::endl;
+		debugText = "ProcessPacket		:: "  + std::to_string(key) + " client <= " + std::to_string(ci) + " client data";
+		DisplayDebugText(debugText);
 	}
 
 	return;
@@ -138,9 +142,7 @@ void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 		gClientsList[id].player.pos.y = pos.y;
 		gClientsList[id].player.pos.z = pos.z;
 	}
-
-	//std::cout << "ProcessPacket		:: " << key << " client <= Player Pos(" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
-
+	
 	for (int ci = 0; ci < MAX_USER; ++ci)
 	{
 		if (!gClientsList[ci].isConnect) continue;
@@ -184,8 +186,6 @@ void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 	gMonster.pos.z = data->posZ;
 	gLock.unlock();
 
-	// std::cout << "OnReceivePacket::MonsterMove	:: "<< key <<" Monster Pos (" << data->posX << ", " << data->posY << ", " << data->posZ << ")" << std::endl;
-
 	return;
 }
 
@@ -215,10 +215,18 @@ void SendMonsterSetInfoPacket(int key)
 
 	SendPacket(key, reinterpret_cast<unsigned char*>(&monsterSetInfoPacket));
 
+	std::string debugText = "";
 	gLock.lock();
-	std::cout << "ProcessPacket		:: " << key << " client <= gMonster Pos(" << gMonster.pos.x << ", " << gMonster.pos.y << ", " << gMonster.pos.z << ")" << std::endl;
-	std::cout << "ProcessPacket		:: " << key << " client <= gMonster Patrol Pos(" << gMonster.patrolPos.x << ", " << gMonster.patrolPos.y << ", " << gMonster.patrolPos.z << ")" << std::endl;
-	gLock.unlock();
 	
+	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Pos(" 
+		+ std::to_string((int)gMonster.pos.x) + ", " + std::to_string((int)gMonster.pos.y) + ", " + std::to_string((int)gMonster.pos.z) + ")";
+	DisplayDebugText(debugText);
+	
+	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Patrol Pos("
+		+ std::to_string((int)gMonster.patrolPos.x) + ", " + std::to_string((int)gMonster.patrolPos.y) + ", " + std::to_string((int)gMonster.patrolPos.z) + ")";
+	DisplayDebugText(debugText);
+
+	gLock.unlock();
+
 	return;
 }

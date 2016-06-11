@@ -26,3 +26,4 @@ namespace OnReceivePacket
 
 void InitializeMonster(void);
 void SendMonsterSetInfoPacket(const int);
+bool HasMonsterArrivedAtDestination(void);

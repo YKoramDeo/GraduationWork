@@ -1,6 +1,5 @@
 #include "processRoutine.h"
 
-
 bool BeCompeletedSendPacket(BYTE type, BYTE size)
 {
 	switch (type)
@@ -59,31 +58,31 @@ void ProcessPacket(int key, unsigned char *packet)
 	{
 	case (BYTE)PacketType::Connect:
 		// Connect 동기화 하는 Packet
-		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
+		//debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
 		OnReceivePacket::Connect(key, packet);
 		SendMonsterSetInfoPacket(key);
 		break;
 	case (BYTE)PacketType::PlayerMove:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
+		//debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
 		OnReceivePacket::PlayerMove(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerLight:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
+		//debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
 		OnReceivePacket::PlayerLight(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerShout:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
+		//debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
 		OnReceivePacket::PlayerShout(key, packet);
 		break;
 	case (BYTE)PacketType::MonsterMove:
-		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
+		//debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
 		OnReceivePacket::MonsterMove(key, packet);
 		break;
 	default:
 		debugText = std::to_string(key) + " ProcessPacket::Unknown Packet Type Detected";
+		DisplayDebugText(debugText);
 		return;
 	}
-	DisplayDebugText(debugText);
 
 	return;
 }
@@ -178,13 +177,33 @@ void OnReceivePacket::PlayerShout(int key, unsigned char* packet)
 
 void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 {
+	bool retval = true;
+
 	Packet::Monster::Move *data = reinterpret_cast<Packet::Monster::Move*>(packet);
 
 	gLock.lock();
+	retval &= (abs(gMonster.pos.x - data->posX) < 2.0f) ? true : false;
+	retval &= (abs(gMonster.pos.y - data->posY) < 2.0f) ? true : false;
+	retval &= (abs(gMonster.pos.z - data->posZ) < 2.0f) ? true : false;
+
+	// 변화가 작다면 그냥 종료합니다.
+	if (retval) {
+		gLock.unlock();
+		return;
+	}
+
+	// 변화가 크다면 그 내용을 저장합니다.
 	gMonster.pos.x = data->posX;
 	gMonster.pos.y = data->posY;
 	gMonster.pos.z = data->posZ;
+
+	std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPos (" 
+		+ std::to_string(gMonster.pos.x) + ", " + std::to_string(gMonster.pos.y) + ", " + std::to_string(gMonster.pos.z) + ")";
+	DisplayDebugText(debugText);
+
 	gLock.unlock();
+
+	if (HasMonsterArrivedAtDestination()) DisplayDebugText("True");
 
 	return;
 }
@@ -229,4 +248,18 @@ void SendMonsterSetInfoPacket(int key)
 	gLock.unlock();
 
 	return;
+}
+
+bool HasMonsterArrivedAtDestination(void)
+{
+	bool ret = true;
+	gLock.lock();
+	
+	ret &= (abs(gMonster.pos.x - gMonster.patrolPos.x) <= 3.0f) ? true : false;
+	ret &= (abs(gMonster.pos.y - gMonster.patrolPos.y) <= 3.0f) ? true : false;
+	ret &= (abs(gMonster.pos.z - gMonster.patrolPos.z) <= 3.0f) ? true : false;
+
+	gLock.unlock();
+
+	return ret;
 }

@@ -199,21 +199,35 @@ void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 
 	std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPos (" 
 		+ std::to_string(gMonster.pos.x) + ", " + std::to_string(gMonster.pos.y) + ", " + std::to_string(gMonster.pos.z) + ")";
+	gLock.unlock();
 	DisplayDebugText(debugText);
 
-	gLock.unlock();
 
-	if (HasMonsterArrivedAtDestination()) DisplayDebugText("True");
-
+	if (HasMonsterArrivedAtDestination())
+	{
+		SetMonsterNewPatrolPath();
+		DisplayDebugText("True");
+		gLock.lock();
+		std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPatrolPos ("
+			+ std::to_string(gMonster.patrolPos.x) + ", " + std::to_string(gMonster.patrolPos.y) + ", " + std::to_string(gMonster.patrolPos.z) + ")";
+		gLock.unlock();
+		DisplayDebugText(debugText);
+	}
 	return;
 }
 
 void InitializeMonster(void)
 {
+	monsterPath[0] = { 160.0f,	0.0f,	30.0f	};
+	monsterPath[1] = { 90.0f,	0.0f,	-60.0f	}; 
+	monsterPath[2] = { 160.0f,	0.0f,	-80.0f	};
+	monsterPath[3] = { 200.0f,	0.0f,	0.0f	};
+
 	gLock.lock();
 	gMonster.pos = { 160, 0, -83 };
-	gMonster.patrolPos = { tmpMonsterPath.x, tmpMonsterPath.y, tmpMonsterPath.z };
 	gLock.unlock();
+
+	SetMonsterNewPatrolPath();
 	return;
 }
 
@@ -236,16 +250,14 @@ void SendMonsterSetInfoPacket(int key)
 
 	std::string debugText = "";
 	gLock.lock();
-	
 	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Pos(" 
 		+ std::to_string((int)gMonster.pos.x) + ", " + std::to_string((int)gMonster.pos.y) + ", " + std::to_string((int)gMonster.pos.z) + ")";
 	DisplayDebugText(debugText);
 	
 	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Patrol Pos("
 		+ std::to_string((int)gMonster.patrolPos.x) + ", " + std::to_string((int)gMonster.patrolPos.y) + ", " + std::to_string((int)gMonster.patrolPos.z) + ")";
-	DisplayDebugText(debugText);
-
 	gLock.unlock();
+	DisplayDebugText(debugText);
 
 	return;
 }
@@ -262,4 +274,32 @@ bool HasMonsterArrivedAtDestination(void)
 	gLock.unlock();
 
 	return ret;
+}
+
+void SetMonsterNewPatrolPath(void)
+{
+	// rand 함수 변경 필요
+	int randVal = 0;
+	bool done = false;
+
+	while (!done) {
+		bool same = true;
+		randVal = rand() % NUM_OF_MONSTER_PATH;
+		gLock.lock();
+		same &= (gMonster.patrolPos.x == monsterPath[randVal].x) ? true : false;
+		same &= (gMonster.patrolPos.y == monsterPath[randVal].y) ? true : false;
+		same &= (gMonster.patrolPos.z == monsterPath[randVal].z) ? true : false;
+		gLock.unlock();
+
+		if (!same)
+		{
+			gLock.lock();
+			gMonster.patrolPos = monsterPath[randVal];
+			gLock.unlock();
+
+			done = true;
+		}
+	}
+
+	return;
 }

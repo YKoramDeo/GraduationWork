@@ -43,5 +43,4 @@ struct Monster
 
 extern Monster gMonster;
 extern std::mutex gLock;
-extern Vector3 tmpMonsterPath;
 extern Vector3 monsterPath[NUM_OF_MONSTER_PATH];

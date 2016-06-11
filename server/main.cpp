@@ -9,11 +9,7 @@ HANDLE ghIOCP;
 Client gClientsList[MAX_USER];
 
 Monster gMonster;
-Vector3 tmpMonsterPath = { 200.0f,0.0f,0.0f };
-Vector3 monsterPath[NUM_OF_MONSTER_PATH] = { (160.0f,	0.0f,	30.0f),
-											 (90.0f,	0.0f,	60.0f),
-											 (160.0f,	0.0f,	-60.0f),
-											 (200.0f,	0.0f,	0.0f) };
+Vector3 monsterPath[NUM_OF_MONSTER_PATH];
 std::mutex gLock;
 
 int main(int argc, char *argv[])

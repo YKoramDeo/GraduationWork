@@ -44,6 +44,7 @@ public class EnemyAI : MonoBehaviour
         lastPlayerSighting = GameObject.FindGameObjectWithTag(Tags.gameController).GetComponent<LastPlayerSighting>();
         mNetworkMgr = NetworkMgr.GetInstance();
         mNetworkMgr.RegisterReceiveNotification(PacketType.MonsterSetInfo, OnReceiveMonsterSetInfo);
+        StartCoroutine(SendPacketFunc());
         //Get 몬스터의 현재 위치 서버로 부터 받는다.
         //transform.position = mNetworkMgr.GetMonsterPosition();
         //nav.Warp(mNetworkMgr.GetMonsterPosition());
@@ -68,14 +69,14 @@ public class EnemyAI : MonoBehaviour
             Patrolling();
     }
 
-    void FixedUpdate()
+    private IEnumerator SendPacketFunc()
     {
-        mFrameCount++;
-
-        if (0 == mFrameCount % 10 && connectNetwork)
+        int frame_count = 0;
+        while (true)
         {
-            //mNetworkMgr.SendMonsterMovePacket(transform.position);  //몬스터 현재 위치 보냄
-            mFrameCount = 0;
+            if (frame_count % 10 == 0)
+                mNetworkMgr.SendMonsterMovePacket(transform.position);
+            yield return null;
         }
     }
 
@@ -98,7 +99,6 @@ public class EnemyAI : MonoBehaviour
         nav.Warp(packetCurPos);
         connectNetwork = true;
 
-        Debug.Log("enter!!!! MonsterReceive!!!");
         mNetworkMgr.CompeleteConnect();
         return;
     }

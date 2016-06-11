@@ -380,14 +380,11 @@ public class NetworkMgr : MonoBehaviour
 
         if (info.id != mMyID)
         {
-            Debug.Log("OnReceiveCpnnectPacket :: " + info.id + " client connect !");
             info.pos.x = data.posX;
             info.pos.y = data.posY;
             info.pos.z = data.posZ;
 
             CreatePlayer(info.id, info.pos);
-
-            Debug.Log("OnReceiveCpnnectPacket :: " + info.id + "client (" + info.pos.x + ", " + info.pos.y + ", " + info.pos.z + ")");
         }
 
         return;
@@ -449,16 +446,12 @@ public class NetworkMgr : MonoBehaviour
         data.posY = pos.y;
         data.posZ = pos.z;
 
-        /*
         if (!mPreviousSavedData.IsSame(data))
         {
             MonsterMovePacket packet = new MonsterMovePacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
         }
-        */
-        MonsterMovePacket packet = new MonsterMovePacket(data);
-        SendReliable(packet);
 
         return;
     }
@@ -477,7 +470,6 @@ public class NetworkMgr : MonoBehaviour
 
         if (!mPreviousSavedData.IsSame(data))
         {
-            Debug.Log(data.id + " : " + data.on + ", (" + data.rotX + ", " + data.rotY + ", " + data.rotZ + ", " + data.rotW + ")");
             PlayerLightPacket packet = new PlayerLightPacket(data);
             SendReliable(packet);
             mPreviousSavedData.SetData(data);
@@ -521,6 +513,7 @@ public class NetworkMgr : MonoBehaviour
     public void CompeleteConnect()
     {
         mConnectSyncComplete = true;
+        Debug.Log("Connect synchronization complete!!!");
         return;
     }
 }

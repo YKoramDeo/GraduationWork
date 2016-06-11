@@ -91,9 +91,7 @@ public class PlayerMovement : MonoBehaviour
         mNetworkMgr.RegisterReceiveNotification(PacketType.PlayerLight, OnReceivePlayerLightPacket);
 
         if (mNetworkMgr.GetMyID() == mInstanceID)
-        {
             StartCoroutine(SendPacketFunc());
-        }
     }
 
     void FixedUpdate()
@@ -207,9 +205,6 @@ public class PlayerMovement : MonoBehaviour
 
             otherPlayerPos = info.pos;
         }
-
-        Debug.Log("OnReceivePlayerMovePacket::Called!");
-
         return;
     }
 

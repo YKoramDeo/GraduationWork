@@ -58,31 +58,31 @@ void ProcessPacket(int key, unsigned char *packet)
 	{
 	case (BYTE)PacketType::Connect:
 		// Connect 동기화 하는 Packet
-		//debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
+		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
 		OnReceivePacket::Connect(key, packet);
 		SendMonsterSetInfoPacket(key);
 		break;
 	case (BYTE)PacketType::PlayerMove:
-		//debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
+		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
 		OnReceivePacket::PlayerMove(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerLight:
-		//debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
+		debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
 		OnReceivePacket::PlayerLight(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerShout:
-		//debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
+		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
 		OnReceivePacket::PlayerShout(key, packet);
 		break;
 	case (BYTE)PacketType::MonsterMove:
-		//debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
+		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
 		OnReceivePacket::MonsterMove(key, packet);
 		break;
 	default:
 		debugText = std::to_string(key) + " ProcessPacket::Unknown Packet Type Detected";
-		DisplayDebugText(debugText);
 		return;
 	}
+	DisplayDebugText(debugText);
 
 	return;
 }
@@ -90,6 +90,11 @@ void ProcessPacket(int key, unsigned char *packet)
 void OnReceivePacket::Connect(int key, unsigned char* packet)
 {
 	std::string debugText = "";
+
+	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
+	gClientsList[data->id].player.pos.x = data->posX;
+	gClientsList[data->id].player.pos.y = data->posY;
+	gClientsList[data->id].player.pos.z = data->posZ;
 
 	// 다른 클라이언트에게 새로운 클라이언트 알림
 	for (int ci = 0; ci < MAX_USER; ++ci)
@@ -142,6 +147,10 @@ void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 		gClientsList[id].player.pos.z = pos.z;
 	}
 	
+	std::string debugText = "OnReceivePlayerMovePacket::Pos("
+		+ std::to_string(gClientsList[id].player.pos.x) + ", " + std::to_string(gClientsList[id].player.pos.y) + ", " + std::to_string(gClientsList[id].player.pos.z) + ")";
+	DisplayDebugText(debugText);
+
 	for (int ci = 0; ci < MAX_USER; ++ci)
 	{
 		if (!gClientsList[ci].isConnect) continue;
@@ -212,6 +221,7 @@ void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 			+ std::to_string(gMonster.patrolPos.x) + ", " + std::to_string(gMonster.patrolPos.y) + ", " + std::to_string(gMonster.patrolPos.z) + ")";
 		gLock.unlock();
 		DisplayDebugText(debugText);
+		SendMonsterSetPatrolPosPacket();
 	}
 	return;
 }
@@ -301,5 +311,24 @@ void SetMonsterNewPatrolPath(void)
 		}
 	}
 
+	return;
+}
+
+void SendMonsterSetPatrolPosPacket(void)
+{
+	Packet::Monster::SetPatrolPos packet;
+	packet.size = sizeof(Packet::Monster::SetPatrolPos);
+	packet.type = (BYTE)PacketType::MonsterSetPatrolPos;
+	gLock.lock();
+	packet.posX = gMonster.patrolPos.x;
+	packet.posY = gMonster.patrolPos.y;
+	packet.posZ = gMonster.patrolPos.z;
+	gLock.unlock();
+
+	for (int ci = 0; ci < MAX_USER; ++ci)
+	{
+		if (!gClientsList[ci].isConnect) continue;
+		SendPacket(ci, reinterpret_cast<unsigned char*>(&packet));
+	}
 	return;
 }

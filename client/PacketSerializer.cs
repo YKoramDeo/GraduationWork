@@ -559,3 +559,65 @@ public class MonsterMovePacket : IPacket<MonsterMoveData>
         return serializer.GetSerializedData();
     }
 }
+
+public class MonsterSetPatrolPosPacket : IPacket<MonsterSetPatrolPosData>
+{
+    private class MonsterSetPatrolPosSerializer : Serializer
+    {
+        public bool Serialize(MonsterSetPatrolPosData data)
+        {
+            bool retval = true;
+
+            retval &= Serialize(data.posX);
+            retval &= Serialize(data.posY);
+            retval &= Serialize(data.posZ);
+
+            return retval;
+        }
+
+        public bool Deserialize(ref MonsterSetPatrolPosData data)
+        {
+            if (GetDataSize() == 0) return false;
+
+            bool retval = true;
+            retval &= Deserialize(ref data.posX);
+            retval &= Deserialize(ref data.posY);
+            retval &= Deserialize(ref data.posZ);
+
+            return retval;
+        }
+    }
+
+    // 패킷 데이터의 실체
+    MonsterSetPatrolPosData mPacketData;
+
+    public MonsterSetPatrolPosPacket(MonsterSetPatrolPosData data)
+    {
+        mPacketData = data;
+    }
+
+    public MonsterSetPatrolPosPacket(byte[] data)
+    {
+        MonsterSetPatrolPosSerializer serializer = new MonsterSetPatrolPosSerializer();
+
+        serializer.SetDeserializedData(data);
+        serializer.Deserialize(ref mPacketData);
+    }
+
+    public byte GetPacketType()
+    {
+        return (byte)PacketType.MonsterSetPatrolPos;
+    }
+
+    public MonsterSetPatrolPosData GetPacketData()
+    {
+        return mPacketData;
+    }
+
+    public byte[] GetByteData()
+    {
+        MonsterSetPatrolPosSerializer serializer = new MonsterSetPatrolPosSerializer();
+        serializer.Serialize(mPacketData);
+        return serializer.GetSerializedData();
+    }
+}

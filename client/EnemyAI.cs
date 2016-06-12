@@ -9,6 +9,7 @@ public class EnemyAI : MonoBehaviour
     public float patrolWaitTime = 1f;                       // The amount of time to wait when the patrol way point is reached.
     public Transform[] patrolWayPoints;                     // An array of transforms for the patrol route.
     public bool patrollBool = false;
+    public bool idleBool = true;
 
     private EnemySight enemySight;                          // Reference to the EnemySight script.
     private NavMeshAgent nav;                               // Reference to the nav mesh agent.
@@ -22,6 +23,7 @@ public class EnemyAI : MonoBehaviour
 
     private NetworkMgr mNetworkMgr;
     private int mFrameCount;
+    private bool corutineBool;
     public Vector3 patrollpos;
 
     public bool connectNetwork;
@@ -37,14 +39,20 @@ public class EnemyAI : MonoBehaviour
 
         patrollpos = Vector3.zero;
         connectNetwork = false;
+        corutineBool = false;
     }
 
     void Start()
     {
         lastPlayerSighting = GameObject.FindGameObjectWithTag(Tags.gameController).GetComponent<LastPlayerSighting>();
         mNetworkMgr = NetworkMgr.GetInstance();
+
+        //==2016.6.12 수정 ==================
         mNetworkMgr.RegisterReceiveNotification(PacketType.MonsterSetInfo, OnReceiveMonsterSetInfo);
-        StartCoroutine(SendPacketFunc());
+        mNetworkMgr.RegisterReceiveNotification(PacketType.MonsterSetPatrolPos, OnReceiveMonsterSetPatrolPos);
+
+        //====================================
+
         //Get 몬스터의 현재 위치 서버로 부터 받는다.
         //transform.position = mNetworkMgr.GetMonsterPosition();
         //nav.Warp(mNetworkMgr.GetMonsterPosition());
@@ -52,6 +60,12 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
+        if (player.GetComponent<PlayerHealth>().tutorialState == false && corutineBool == false)
+        {
+            StartCoroutine(SendPacketFunc());
+            corutineBool = true;
+        }
+
         // If the player is in sight and is alive...
         //if (enemySight.playerInSight && playerHealth.health > 0f && Vector3.Distance(enemySight.personalLastSighting, transform.position)<2)
         if (playerHealth.health == 0f || enemyAnim.frontHitBool == true || enemyAnim.backHitBool == true)
@@ -64,20 +78,47 @@ public class EnemyAI : MonoBehaviour
             Chasing();
 
         // Otherwise...
-        else
+        else if (patrollpos != Vector3.zero)
             // ... patrol.
             Patrolling();
+
+        else
+            idleBool = true;
     }
+
+    //불필요한 fixedUpdate 삭제
+    //===========================================
+    /*
+    void FixedUpdate()
+    {
+        mFrameCount++;
+
+        if (0 == mFrameCount % 10 && connectNetwork)
+        {
+            mNetworkMgr.SendMonsterMovePacket(transform.position);  //몬스터 현재 위치 보냄
+            mFrameCount = 0;
+        }
+    }
+  
+    public void SetArgument(Vector3 patrollPosition)
+    {
+        if (patrollPosition != patrollpos)
+            patrollpos = patrollPosition;
+    }
+    */
 
     private IEnumerator SendPacketFunc()
     {
         int frame_count = 0;
         while (true)
         {
+            frame_count++;
             if (frame_count % 10 == 0)
             {
                 Debug.Log("Monster Pos = (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z);
                 mNetworkMgr.SendMonsterMovePacket(transform.position);
+
+                frame_count = 0;
             }
             yield return null;
         }
@@ -88,16 +129,16 @@ public class EnemyAI : MonoBehaviour
         MonsterSetInfoPacket packet = new MonsterSetInfoPacket(packetData);
         MonsterSetInfoData data = packet.GetPacketData();
 
-        Vector3 packetCurPos, packetPatrollPos;
+        Vector3 packetCurPos, packetPatrolPos;
         packetCurPos.x = data.posX;
         packetCurPos.y = data.posY;
         packetCurPos.z = data.posZ;
-        packetPatrollPos.x = data.patrolPosX;
-        packetPatrollPos.y = data.patrolPosY;
-        packetPatrollPos.z = data.patrolPosZ;
+        packetPatrolPos.x = data.patrolPosX;
+        packetPatrolPos.y = data.patrolPosY;
+        packetPatrolPos.z = data.patrolPosZ;
 
-        if (packetPatrollPos != patrollpos)
-            patrollpos = packetPatrollPos;
+        if (packetPatrolPos != patrollpos)
+            patrollpos = packetPatrolPos;
 
         nav.Warp(packetCurPos);
         connectNetwork = true;
@@ -106,17 +147,38 @@ public class EnemyAI : MonoBehaviour
         return;
     }
 
+    private void OnReceiveMonsterSetPatrolPos(PacketType type, byte[] packetData)
+    {
+        MonsterSetPatrolPosPacket packet = new MonsterSetPatrolPosPacket(packetData);
+        MonsterSetPatrolPosData data = packet.GetPacketData();
+
+        Vector3 packetPatrolPos;
+        packetPatrolPos.x = data.posX;
+        packetPatrolPos.y = data.posY;
+        packetPatrolPos.z = data.posZ;
+
+        if (packetPatrolPos != patrollpos)
+            patrollpos = packetPatrolPos;
+
+        return;
+    }
+    //=============================================================================
+
     void Bitting()
     {
+        nav.Resume();
+        idleBool = false;
         patrollBool = false;
         // Stop the enemy where it is.
         nav.Stop();
-        // Debug.Log("Now Bitting");
+       // Debug.Log("Now Bitting");
     }
 
 
     void Chasing()
     {
+        nav.Resume();
+        idleBool = false;
         patrollBool = false;
         //Debug.Log("Now Chasing");
         if (enemySight.playerInSight)
@@ -157,6 +219,8 @@ public class EnemyAI : MonoBehaviour
 
     void Patrolling()
     {
+        idleBool = false;
+        nav.Resume();
         patrollBool = true;
         //Debug.Log("Now patrolling");
         if (!enemySight.playerInSight)
@@ -195,8 +259,8 @@ public class EnemyAI : MonoBehaviour
         */
 
             nav.destination = patrollpos;
-            // nav.SetDestination(nav.destination);
-            // Debug.Log("Set Destination");
+           // nav.SetDestination(nav.destination);
+           // Debug.Log("Set Destination");
         }
     }
 }

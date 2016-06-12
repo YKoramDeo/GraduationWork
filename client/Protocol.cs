@@ -140,7 +140,7 @@ public struct MonsterMoveData
     public float posZ;
 };
 
-public struct SetPatrolPosData
+public struct MonsterSetPatrolPosData
 {
     public float posX;
     public float posY;

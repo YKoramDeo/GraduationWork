@@ -85,7 +85,7 @@ public class NetworkLib
     // thread start function
     public void Dispatch()
     {
-        Debug.Log("Dispatch::Running!");
+        //Debug.Log("Dispatch::Running!");
         lock (mLockObj)
         {
             DispatchSend();

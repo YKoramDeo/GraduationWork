@@ -495,6 +495,20 @@ public class NetworkMgr : MonoBehaviour
         return;
     }
 
+    public void SendPlayerGetItemPacket(int itemID)
+    {
+        if (!mConnectSyncComplete) return;
+
+        PlayerGetItemData data = new PlayerGetItemData();
+        data.id = mMyID;
+        data.itemID = itemID;
+
+        PlayerGetItemPacket packet = new PlayerGetItemPacket(data);
+        SendReliable(packet);
+
+        return;
+    }
+
     public static NetworkMgr GetInstance()
     {
         if (NetworkMgr.mInstance == null)

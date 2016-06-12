@@ -194,6 +194,13 @@ void OnReceivePacket::PlayerShout(int key, unsigned char* packet)
 
 void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 {
+	Packet::Player::GetItem *data = reinterpret_cast<Packet::Player::GetItem*>(packet);
+
+	gItemArr[data->itemID] = data->id;
+
+	std::string debugText = "OnReceivePlayer GetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
+	DisplayDebugText(debugText);
+
 	for (int ci = 0; ci < MAX_USER; ++ci)
 	{
 		if (!gClientsList[ci].isConnect) continue;
@@ -257,6 +264,13 @@ void InitializeMonster(void)
 	gLock.unlock();
 
 	SetMonsterNewPatrolPath();
+	return;
+}
+
+void InitializeItem(void)
+{
+	for (int count = 0; count < NUM_OF_ITEM; ++count)
+		gItemArr[count] = NIL;
 	return;
 }
 

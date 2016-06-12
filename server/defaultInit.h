@@ -14,6 +14,7 @@
 
 #define NIL						-999	// 내가 정한 NULL이 아닌 default 값
 #define NUM_OF_MONSTER_PATH		4
+#define NUM_OF_ITEM				6
 
 struct Vector3
 {
@@ -44,3 +45,4 @@ struct Monster
 extern Monster gMonster;
 extern std::mutex gLock;
 extern Vector3 monsterPath[NUM_OF_MONSTER_PATH];
+extern int gItemArr[NUM_OF_ITEM];

@@ -430,6 +430,66 @@ public class PlayerShoutPacket : IPacket<PlayerShoutData>
     }
 }
 
+public class PlayerGetItemPacket : IPacket<PlayerGetItemData>
+{
+    private class PlayerGetItemSerializer : Serializer
+    {
+        public bool Serialize(PlayerGetItemData data)
+        {
+            bool retval = true;
+
+            retval &= Serialize(data.id);
+            retval &= Serialize(data.itemID);
+
+            return retval;
+        }
+
+        public bool Deserialize(ref PlayerGetItemData data)
+        {
+            if (GetDataSize() == 0) return false;
+
+            bool retval = true;
+            retval &= Deserialize(ref data.id);
+            retval &= Deserialize(ref data.itemID);
+
+            return retval;
+        }
+    }
+
+    // 패킷 데이터의 실체
+    PlayerGetItemData mPacketData;
+
+    public PlayerGetItemPacket(PlayerGetItemData data)
+    {
+        mPacketData = data;
+    }
+
+    public PlayerGetItemPacket(byte[] data)
+    {
+        PlayerGetItemSerializer serializer = new PlayerGetItemSerializer();
+
+        serializer.SetDeserializedData(data);
+        serializer.Deserialize(ref mPacketData);
+    }
+
+    public byte GetPacketType()
+    {
+        return (byte)PacketType.PlayerGetItem;
+    }
+
+    public PlayerGetItemData GetPacketData()
+    {
+        return mPacketData;
+    }
+
+    public byte[] GetByteData()
+    {
+        PlayerGetItemSerializer serializer = new PlayerGetItemSerializer();
+        serializer.Serialize(mPacketData);
+        return serializer.GetSerializedData();
+    }
+}
+
 public class MonsterSetInfoPacket : IPacket<MonsterSetInfoData>
 {
     private class MonsterSetInfoSerializer : Serializer

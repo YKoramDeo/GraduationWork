@@ -59,6 +59,7 @@ public enum PacketType
     PlayerMove,
     PlayerLight,
     PlayerShout,
+    PlayerGetItem,
     MonsterSetInfo,
     MonsterMove,
     MonsterSetPatrolPos
@@ -121,6 +122,12 @@ public struct PlayerShoutData
     public float posX;
     public float posY;
     public float posZ;
+}
+
+public struct PlayerGetItemData
+{
+    public int id;
+    public int itemID;
 }
 
 public struct MonsterSetInfoData

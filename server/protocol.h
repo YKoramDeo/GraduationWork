@@ -28,6 +28,7 @@ enum PacketType
 	PlayerMove,
 	PlayerLight,
 	PlayerShout,
+	PlayerGetItem,
 	MonsterSetInfo,
 	MonsterMove,
 	MonsterSetPatrolPos
@@ -101,6 +102,14 @@ namespace Packet
 			float posX;
 			float posY;
 			float posZ;
+		};
+
+		struct GetItem
+		{
+			BYTE size;
+			BYTE type;
+			int id;
+			int itemID;
 		};
 	}
 

@@ -28,6 +28,10 @@ bool BeCompeletedSendPacket(BYTE type, BYTE size)
 		if (size != sizeof(Packet::Player::Shout))
 			return false;
 		break;
+	case PacketType::PlayerGetItem:
+		if (size != sizeof(Packet::Player::GetItem))
+			return false;
+		break;
 	case PacketType::MonsterSetInfo:
 		if (size != sizeof(Packet::Monster::SetInfo))
 			return false;
@@ -73,6 +77,10 @@ void ProcessPacket(int key, unsigned char *packet)
 	case (BYTE)PacketType::PlayerShout:
 		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
 		OnReceivePacket::PlayerShout(key, packet);
+		break;
+	case (BYTE)PacketType::PlayerGetItem:
+		debugText = std::to_string(key) + " ProcessPacket::PlayerGetItem::Called!!";
+		OnReceivePacket::PlayerGetItem(key, packet);
 		break;
 	case (BYTE)PacketType::MonsterMove:
 		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
@@ -174,6 +182,17 @@ void OnReceivePacket::PlayerLight(int key, unsigned char* packet)
 }
 
 void OnReceivePacket::PlayerShout(int key, unsigned char* packet)
+{
+	for (int ci = 0; ci < MAX_USER; ++ci)
+	{
+		if (!gClientsList[ci].isConnect) continue;
+		if (gClientsList[ci].id == key) continue;
+		SendPacket(ci, packet);
+	}
+	return;
+}
+
+void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 {
 	for (int ci = 0; ci < MAX_USER; ++ci)
 	{

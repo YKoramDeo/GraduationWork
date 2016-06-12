@@ -506,6 +506,8 @@ public class NetworkMgr : MonoBehaviour
         PlayerGetItemPacket packet = new PlayerGetItemPacket(data);
         SendReliable(packet);
 
+        Debug.Log("Send!!");
+
         return;
     }
 

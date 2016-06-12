@@ -26,7 +26,6 @@ public class TeddyBearPickUp : MonoBehaviour
     void Start()
     {
         mNetwork = NetworkMgr.GetInstance();
-        itemID = 7;
     }
 
     void OnTriggerEnter(Collider other)

@@ -21,6 +21,7 @@ namespace OnReceivePacket
 	void PlayerMove(int, unsigned char*);
 	void PlayerLight(int, unsigned char*);
 	void PlayerShout(int, unsigned char*);
+	void PlayerGetItem(int, unsigned char*);
 	void MonsterMove(int, unsigned char*);
 }
 

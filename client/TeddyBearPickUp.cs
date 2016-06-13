@@ -25,6 +25,9 @@ public class TeddyBearPickUp : MonoBehaviour
     void Start()
     {
         mNetwork = NetworkMgr.GetInstance();
+    }
+        // 160613
+        /*
         mNetwork.RegisterReceiveNotification(PacketType.PlayerGetItem, OnReceivePlayerGetItem);
     }
 
@@ -57,6 +60,33 @@ public class TeddyBearPickUp : MonoBehaviour
             // ... and destroy this gameobject.
             this.gameObject.SetActive(false);
         }
+
+        return;
+    }
+    */
+    public void GetItemFunc()
+    {
+        bearPanel.SetActive(true);
+        // ... play the clip at the position of the key...
+        AudioSource.PlayClipAtPoint(keyGrab, transform.position);
+
+        ++playerInventory.teddyBear_count;
+
+        if (playerInventory.teddyBear_count == 6)
+        {
+            playerInventory.hasKey = true;
+            sceneFadeInOut.EndScene();
+        }
+
+        SoundManager.instance.Play(106);
+        SoundManager.instance.Play(0);
+        alarmText.text = "곰인형의 일부분을 획득 하였습니다.";
+        alarmText.enabled = true;
+        GetComponent<ItemGetSprite>().TurnOn();
+        ItemData.instance.Bear();
+
+        // ... and destroy this gameobject.
+        this.gameObject.SetActive(false);
 
         return;
     }

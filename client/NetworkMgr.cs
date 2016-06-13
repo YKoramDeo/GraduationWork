@@ -7,7 +7,7 @@ using System.Threading;
 
 public class NetworkMgr : MonoBehaviour
 {
-
+    public GameObject[] item_list = new GameObject[6];
     public static NetworkMgr mInstance = null;
 
     private NetworkLib mNetwork;
@@ -153,6 +153,9 @@ public class NetworkMgr : MonoBehaviour
             RegisterReceiveNotification(PacketType.SetID, OnReceiveSetIDPacket);
             RegisterReceiveNotification(PacketType.Connect, OnReceiveConnectPacket);
             RegisterReceiveNotification(PacketType.Disconnect, OnReceiveDisconnectPacket);
+
+            RegisterReceiveNotification(PacketType.PlayerGetItem, OnReceivePlayerGetItemPacket);
+
             mNetwork.RegisterEventHandler(OnEventHandling);
             LaunchThread();
         }
@@ -507,6 +510,16 @@ public class NetworkMgr : MonoBehaviour
         SendReliable(packet);
 
         Debug.Log("Send!!");
+
+        return;
+    }
+
+    private void OnReceivePlayerGetItemPacket(PacketType type, byte[] packetData)
+    {
+        PlayerGetItemPacket packet = new PlayerGetItemPacket(packetData);
+        PlayerGetItemData data = packet.GetPacketData();
+
+        item_list[data.itemID].GetComponent<TeddyBearPickUp>().GetItemFunc();
 
         return;
     }

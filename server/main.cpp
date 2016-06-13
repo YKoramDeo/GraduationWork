@@ -10,7 +10,6 @@ Client gClientsList[MAX_USER];
 
 Monster gMonster;
 Vector3 monsterPath[NUM_OF_MONSTER_PATH];
-int gItemArr[NUM_OF_ITEM];
 std::mutex gLock;
 
 int main(int argc, char *argv[])
@@ -20,7 +19,6 @@ int main(int argc, char *argv[])
 
 	InitializeServer();
 	InitializeMonster();
-	InitializeItem();
 
 	acceptThread = std::thread(AcceptThreadFunc);
 	for (int i = 0; i < NUM_THREADS; ++i)

@@ -62,35 +62,35 @@ void ProcessPacket(int key, unsigned char *packet)
 	{
 	case (BYTE)PacketType::Connect:
 		// Connect 동기화 하는 Packet
-		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
+//		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
 		OnReceivePacket::Connect(key, packet);
 		SendMonsterSetInfoPacket(key);
 		break;
 	case (BYTE)PacketType::PlayerMove:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
+//		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
 		OnReceivePacket::PlayerMove(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerLight:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
+//		debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
 		OnReceivePacket::PlayerLight(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerShout:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
+//		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
 		OnReceivePacket::PlayerShout(key, packet);
 		break;
 	case (BYTE)PacketType::PlayerGetItem:
-		debugText = std::to_string(key) + " ProcessPacket::PlayerGetItem::Called!!";
+//		debugText = std::to_string(key) + " ProcessPacket::PlayerGetItem::Called!!";
 		OnReceivePacket::PlayerGetItem(key, packet);
 		break;
 	case (BYTE)PacketType::MonsterMove:
-		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
+//		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
 		OnReceivePacket::MonsterMove(key, packet);
 		break;
 	default:
 		debugText = std::to_string(key) + " ProcessPacket::Unknown Packet Type Detected";
+		DisplayDebugText(debugText);
 		return;
 	}
-	DisplayDebugText(debugText);
 
 	return;
 }
@@ -231,22 +231,26 @@ void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 	gMonster.pos.x = data->posX;
 	gMonster.pos.y = data->posY;
 	gMonster.pos.z = data->posZ;
-
+	
 	std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPos (" 
 		+ std::to_string(gMonster.pos.x) + ", " + std::to_string(gMonster.pos.y) + ", " + std::to_string(gMonster.pos.z) + ")";
 	gLock.unlock();
 	DisplayDebugText(debugText);
-
+	
 
 	if (HasMonsterArrivedAtDestination())
 	{
 		SetMonsterNewPatrolPath();
 		DisplayDebugText("True");
+		/*
 		gLock.lock();
+		
 		std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPatrolPos ("
 			+ std::to_string(gMonster.patrolPos.x) + ", " + std::to_string(gMonster.patrolPos.y) + ", " + std::to_string(gMonster.patrolPos.z) + ")";
 		gLock.unlock();
+		
 		DisplayDebugText(debugText);
+		*/
 		SendMonsterSetPatrolPosPacket();
 	}
 	return;
@@ -264,13 +268,6 @@ void InitializeMonster(void)
 	gLock.unlock();
 
 	SetMonsterNewPatrolPath();
-	return;
-}
-
-void InitializeItem(void)
-{
-	for (int count = 0; count < NUM_OF_ITEM; ++count)
-		gItemArr[count] = NIL;
 	return;
 }
 

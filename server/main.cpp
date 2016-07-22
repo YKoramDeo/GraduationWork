@@ -3,10 +3,14 @@
 #include "defaultInit.h"
 #include "iocpNetwork.h"
 #include "processRoutine.h"
+#include "lock-free_synchronization.h"
 
 bool gShutdown = false;
 HANDLE ghIOCP;
 Client gClientsList[MAX_USER];
+
+LFNode *gClientInfo_DelList = nullptr;
+std::mutex gClientInfo_DelList_Lock;
 
 Monster gMonster;
 Vector3 monsterPath[NUM_OF_MONSTER_PATH];

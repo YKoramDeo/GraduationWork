@@ -196,8 +196,6 @@ void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 {
 	Packet::Player::GetItem *data = reinterpret_cast<Packet::Player::GetItem*>(packet);
 
-	gItemArr[data->itemID] = data->id;
-
 	std::string debugText = "OnReceivePlayer GetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
 	DisplayDebugText(debugText);
 
@@ -235,7 +233,7 @@ void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 	std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPos (" 
 		+ std::to_string(gMonster.pos.x) + ", " + std::to_string(gMonster.pos.y) + ", " + std::to_string(gMonster.pos.z) + ")";
 	gLock.unlock();
-	DisplayDebugText(debugText);
+	//DisplayDebugText(debugText);
 	
 
 	if (HasMonsterArrivedAtDestination())

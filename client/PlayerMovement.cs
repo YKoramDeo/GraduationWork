@@ -222,11 +222,12 @@ public class PlayerMovement : MonoBehaviour
                     || Input.GetKeyDown(KeyCode.D) || Input.GetKey(KeyCode.D))
                     mNetworkMgr.SendPlayerMovePacket(m_Move, h, v, sneak, transform.position);
 
-                if (Input.GetMouseButtonDown(0) || Input.GetMouseButton(0) || Input.GetMouseButtonUp(0))
-                    mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
-
                 frame_count = 0;
             }
+
+            if (Input.GetMouseButtonDown(0) || Input.GetMouseButton(0) || Input.GetMouseButtonUp(0))
+                mNetworkMgr.SendPlayerLightPacket(flashLight, sendFlashLightrotation);
+
             yield return null;
         }
     }

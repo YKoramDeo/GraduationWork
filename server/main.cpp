@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 {
 	std::vector<std::thread*> workerThreads;
 	std::thread acceptThread;
+	gClientInfo_DelList = new LFNode(MIN_INT);
 
 	InitializeServer();
 	InitializeMonster();
@@ -40,5 +41,15 @@ int main(int argc, char *argv[])
 	}
 
 	StopServer();
+
+	while (0 != gClientInfo_DelList->next)
+	{
+		LFNode *temp = gClientInfo_DelList;
+		gClientInfo_DelList = gClientInfo_DelList->GetNext();
+		delete temp;
+	}
+
+	delete gClientInfo_DelList;
+
 	return 0;
 }

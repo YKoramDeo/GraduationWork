@@ -1,32 +1,60 @@
 #pragma once
 #include "stdafx.h"
+#include "defaultInit.h"
 
 #define MAX_INT 0x80000000
 #define MIN_INT 0x7FFFFFFF
 
+/*
 struct Data
 {
 	int id;
 };
+*/
+
+typedef Client Data;
 
 class LFNode
 {
 public:
 	Data data;
 	int next;
-	int addr;
-
-	LFNode() { next = 0; addr = reinterpret_cast<int>(this); }
+	
+	LFNode() { next = 0; }
 	LFNode(int value) {
 		next = 0;
 		data.id = value;
-		addr = reinterpret_cast<int>(this);
+		data.isConnect = true;
+		data.socket = NULL;
+		memset(&data.recvOverlap.originalOverlap, 0, sizeof(WSAOVERLAPPED));
+		ZeroMemory(data.recvOverlap.buffer, MAX_BUFF_SIZE);
+		data.recvOverlap.wsaBuf.buf = reinterpret_cast<CHAR*>(data.recvOverlap.buffer);
+		data.recvOverlap.wsaBuf.len = MAX_BUFF_SIZE;
+		data.recvOverlap.operation = OP_RECV;
+		data.recvOverlap.packetSize = 0;
+		ZeroMemory(data.packetBuf, MAX_BUFF_SIZE);
+		data.previousDataSize = 0;
+		data.player.pos.x = 0;
+		data.player.pos.y = 0;
+		data.player.pos.z = 0;
 	}
 
 	LFNode(Data data) {
 		next = 0;
 		this->data.id = data.id;
-		addr = reinterpret_cast<int>(this);
+		this->data.isConnect = true;
+		this->data.socket = NULL;
+		memset(&this->data.recvOverlap.originalOverlap, 0, sizeof(WSAOVERLAPPED));
+		ZeroMemory(this->data.recvOverlap.buffer, MAX_BUFF_SIZE);
+		this->data.recvOverlap.wsaBuf.buf = reinterpret_cast<CHAR*>(this->data.recvOverlap.buffer);
+		this->data.recvOverlap.wsaBuf.len = MAX_BUFF_SIZE;
+		this->data.recvOverlap.operation = OP_RECV;
+		this->data.recvOverlap.packetSize = 0;
+		ZeroMemory(this->data.packetBuf, MAX_BUFF_SIZE);
+		this->data.previousDataSize = 0;
+		this->data.player.pos.x = 0;
+		this->data.player.pos.y = 0;
+		this->data.player.pos.z = 0;
 	}
 
 	~LFNode() { }
@@ -119,15 +147,6 @@ public:
 		std::cout << std::endl;
 
 		curr = &mHead;
-		std::cout << "addr : ";
-		while (curr != 0)
-		{
-			std::cout << reinterpret_cast<int>(curr) << " ";
-			curr = curr->GetNext();
-		}
-		std::cout << std::endl;
-
-		curr = &mHead;
 		std::cout << "next : ";
 		while (curr != 0)
 		{
@@ -158,6 +177,23 @@ public:
 				return false;
 
 			LFNode* newNode = new LFNode(data);
+			newNode->SetNext(curr);
+			if (pred->CAS(curr, newNode, false, false))
+				return true;
+			delete newNode;
+		}
+	}
+
+	bool Add(int id)
+	{
+		LFNode *pred, *curr;
+
+		while (true) {
+			Find(&pred, &curr, id);
+			if (curr->data.id == id)
+				return false;
+
+			LFNode* newNode = new LFNode(id);
 			newNode->SetNext(curr);
 			if (pred->CAS(curr, newNode, false, false))
 				return true;
@@ -222,13 +258,23 @@ public:
 		return;
 	}
 
-	void Test()
+	bool Search(int index, Client **ref)
 	{
-		LFNode *curr = mHead.GetNext();
-		mHead.CAS(mHead.GetNext(), &mTail, false, false);
-		delete curr;
-		return;
+		LFNode *pred, *curr;
+		
+		while (true)
+		{
+			Find(&pred, &curr, index);
+
+			if (curr->data.id != index)
+				return false;
+			
+			*ref = &(curr->data);
+			//pred->CAS(curr, succ, false, false);
+			return true;
+		}
 	}
+
 private:
 	LFNode mHead, mTail;
 
@@ -264,3 +310,5 @@ private:
 		return;
 	}
 };
+
+extern LFList *gClientInfoSet;

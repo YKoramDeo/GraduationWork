@@ -292,6 +292,13 @@ void AcceptThreadFunc(void)
 		gClientsList[newID].player.pos.y = -4.29f;
 		gClientsList[newID].player.pos.z = -1.23f;
 
+		gClientInfoSet->Add(newID);
+		gClientInfoSet->CheckElement();
+
+		Client *tempData = nullptr;
+		gClientInfoSet->Search(newID, &tempData);
+		std::cout << tempData->id << " " <<tempData->isConnect << " : " << tempData->player.pos.x << ", " << tempData->player.pos.y << ", " << tempData->player.pos.z << std::endl;
+
 		// 새로운 클라이언트 접속 알림
 		Packet::SetID clientSetIDPacket;
 		clientSetIDPacket.size = sizeof(Packet::SetID);

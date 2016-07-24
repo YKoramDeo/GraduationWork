@@ -11,7 +11,9 @@
 
 #include "protocol.h"
 #include "defaultInit.h"
+#include "lock-free_synchronization.h"
 
+/*
 struct OverlapEx
 {
 	WSAOVERLAPPED	originalOverlap;			// 기존의 Overlapped 구조체
@@ -31,6 +33,9 @@ struct Client
 	unsigned char	packetBuf[MAX_BUFF_SIZE];	// Recv되는 패킷이 조립되는 Buffer / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 	int				previousDataSize;			// 이전의 받은 양을 저장하는 변수 / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 };
+*/
+// 해당되는 내용은 lock-free SET과 동기화하가 위해 defaultInit부분으로 변경
+// 여기에 주석 처리해서 남겨두는 이유는 다른 프로그램에서 사용될 때 참고할 수 있도록 남겨둠
 
 extern bool gShutdown;
 extern HANDLE ghIOCP;

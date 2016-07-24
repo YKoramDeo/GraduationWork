@@ -9,6 +9,7 @@ bool gShutdown = false;
 HANDLE ghIOCP;
 Client gClientsList[MAX_USER];
 
+LFList *gClientInfoSet;
 LFNode *gClientInfo_DelList = nullptr;
 std::mutex gClientInfo_DelList_Lock;
 
@@ -20,8 +21,10 @@ int main(int argc, char *argv[])
 {
 	std::vector<std::thread*> workerThreads;
 	std::thread acceptThread;
+	gClientInfoSet = new LFList();
 	gClientInfo_DelList = new LFNode(MIN_INT);
 
+	gClientInfoSet->Initialize();
 	InitializeServer();
 	InitializeMonster();
 
@@ -42,6 +45,7 @@ int main(int argc, char *argv[])
 
 	StopServer();
 
+	gClientInfoSet->CleanElement();
 	while (0 != gClientInfo_DelList->next)
 	{
 		LFNode *temp = gClientInfo_DelList;
@@ -50,6 +54,7 @@ int main(int argc, char *argv[])
 	}
 
 	delete gClientInfo_DelList;
+	delete gClientInfoSet;
 
 	return 0;
 }

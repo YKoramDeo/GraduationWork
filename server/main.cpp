@@ -7,7 +7,6 @@
 
 bool gShutdown = false;
 HANDLE ghIOCP;
-Client gClientsList[MAX_USER];
 
 LFList *gClientInfoSet;
 LFNode *gClientInfo_DelList = nullptr;

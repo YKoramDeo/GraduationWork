@@ -128,6 +128,7 @@ public:
 		while (mHead.GetNext() != &mTail) {
 			ptr = mHead.GetNext();
 			mHead.SetNext(ptr->GetNext());
+			if(socket != NULL) closesocket(ptr->data.socket);
 			delete ptr;
 		}
 		return;

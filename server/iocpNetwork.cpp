@@ -65,11 +65,7 @@ void InitializeServer(void)
 
 void StopServer(void)
 {
-	for (auto client : gClientsList)
-	{
-		if (client.isConnect)
-			closesocket(client.socket);
-	}
+	gClientInfoSet->Initialize();
 
 	WSACleanup();
 	DisplayDebugText("Stop Server::Called!!");
@@ -94,7 +90,6 @@ void WorkerThreadFunc(void)
 
 			if (WSAENOTSOCK == GetLastError() || ERROR_NETNAME_DELETED == GetLastError() || 0 == ioSize)
 			{
-				std::cout << "What???" << std::endl;
 				gClientInfoSet->Search(key, &clientData);
 				clientData->isConnect = false;
 				closesocket(clientData->socket);
@@ -106,12 +101,7 @@ void WorkerThreadFunc(void)
 				packet.type = PacketType::Disconnect;
 				packet.id = key;
 
-				for (auto ci = 0; ci < MAX_USER; ++ci)
-				{
-					if (!gClientsList[ci].isConnect) continue;
-					if (ci == key) continue;
-					SendPacket(ci, reinterpret_cast<unsigned char*>(&packet));
-				}
+				BroadcastingExceptIndex(key, reinterpret_cast<unsigned char*>(&packet));
 				gClientInfoSet->Remove(key);
 
 				std::string debugText = "WorkerThreadFunc	::Disconnect " + std::to_string(key) + " client. :(";
@@ -122,8 +112,7 @@ void WorkerThreadFunc(void)
 		if (OP_RECV == overlap->operation)
 		{
 			gClientInfoSet->Search(key, &clientData);
-			clientData->isConnect = false;
-
+			
 			unsigned char *buf_ptr = overlap->buffer;
 			int remained = ioSize;
 			while (0 < remained)
@@ -329,6 +318,7 @@ void SendPacket(const int index, const unsigned char* packet)
 			DisplayErrMsg("SendPacket::WSASend", errNo);
 		if (WSAECONNABORTED == errNo)
 		{
+			clientData->isConnect = false;
 			closesocket(clientData->socket);
 			
 			// ToDo : 10054 error Ã³¸®
@@ -338,16 +328,54 @@ void SendPacket(const int index, const unsigned char* packet)
 			packet.type = PacketType::Disconnect;
 			packet.id = index;
 
-			for (auto ci = 0; ci < MAX_USER; ++ci)
-			{
-				if (!gClientsList[ci].isConnect) continue;
-				if (ci == index) continue;
-				SendPacket(ci, reinterpret_cast<unsigned char*>(&packet));
-			}
+			BroadcastingExceptIndex(index, reinterpret_cast<unsigned char*>(&packet));
 
-			clientData->isConnect = false;
 			gClientInfoSet->Remove(index);
 			DisplayDebugText("SendPacket::Process error 10053.");
+		}
+	}
+	return;
+}
+
+void BroadcastingExceptIndex(const int index, const unsigned char* packet)
+{
+	bool result = false, marked = false;
+	LFNode *pred, *curr;
+	LFNode *tail = gClientInfoSet->GetTail();
+	pred = gClientInfoSet->GetHead();
+	curr = pred;
+	while (curr->GetNext() != tail)
+	{
+		curr = pred->GetNextWithMark(&marked);
+		if (marked) continue;
+
+		result = gClientInfoSet->Contains(curr->data.id);
+		if (result) {
+			if (curr->data.isConnect && curr->data.id != index)
+				SendPacket(curr->data.id, packet);
+			pred = curr;
+		}
+	}
+	return;
+}
+
+void Broadcasting(const unsigned char* packet)
+{
+	bool result = false, marked = false;
+	LFNode *pred, *curr;
+	LFNode *tail = gClientInfoSet->GetTail();
+	pred = gClientInfoSet->GetHead();
+	curr = pred;
+	while (curr->GetNext() != tail)
+	{
+		curr = pred->GetNextWithMark(&marked);
+		if (marked) continue;
+
+		result = gClientInfoSet->Contains(curr->data.id);
+		if (result) {
+			if (curr->data.isConnect)
+				SendPacket(curr->data.id, packet);
+			pred = curr;
 		}
 	}
 	return;

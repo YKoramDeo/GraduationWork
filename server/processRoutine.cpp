@@ -97,6 +97,7 @@ void ProcessPacket(int key, unsigned char *packet)
 
 void OnReceivePacket::Connect(int key, unsigned char* packet)
 {
+	std::cout << "Connect Packet Called!!" << std::endl;
 	std::string debugText = "";
 
 	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
@@ -108,32 +109,36 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 	gClientInfoSet->Update(key, transmittedPlayerData);
 
 	// 다른 클라이언트에게 새로운 클라이언트 알림
-	for (int ci = 0; ci < MAX_USER; ++ci)
-	{
-		if (!gClientsList[ci].isConnect) continue;
-		if (ci == key) continue;
-		SendPacket(ci, packet);
-
-		debugText = "ProcessPacket		:: " + std::to_string(ci) + " client <= " + std::to_string(key) + " client data";
-		DisplayDebugText(debugText);
-	}
+	
+	BroadcastingExceptIndex(key, packet);
 
 	// 새로 들어온 클라이언트에게 이미 들어와있던 플레이어 정보들을 넘김
 	Packet::Connect preOtherPlayerPacket;
 	preOtherPlayerPacket.size = sizeof(Packet::Connect);
 	preOtherPlayerPacket.type = (BYTE)PacketType::Connect;
-	for (int ci = 0; ci < MAX_USER; ++ci)
+	
+	bool result = false, marked = false;
+	LFNode *pred, *curr;
+	LFNode *tail = gClientInfoSet->GetTail();
+	pred = gClientInfoSet->GetHead();
+	curr = pred;
+	while (curr->GetNext() != tail)
 	{
-		if (!gClientsList[ci].isConnect) continue;
-		if (ci == key) continue;
-		preOtherPlayerPacket.id = ci;
-		preOtherPlayerPacket.posX = gClientsList[ci].player.pos.x;
-		preOtherPlayerPacket.posY = gClientsList[ci].player.pos.y;
-		preOtherPlayerPacket.posZ = gClientsList[ci].player.pos.z;
-		SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
+		curr = pred->GetNextWithMark(&marked);
+		if (marked) continue;
 
-		debugText = "ProcessPacket		:: "  + std::to_string(key) + " client <= " + std::to_string(ci) + " client data";
-		DisplayDebugText(debugText);
+		result = gClientInfoSet->Contains(curr->data.id);
+		if (result) {
+			if (curr->data.isConnect && curr->data.id != key)
+			{
+				preOtherPlayerPacket.id = curr->data.id;
+				preOtherPlayerPacket.posX = curr->data.player.pos.x;
+				preOtherPlayerPacket.posY = curr->data.player.pos.y;
+				preOtherPlayerPacket.posZ = curr->data.player.pos.z;
+				SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
+			}
+			pred = curr;
+		}
 	}
 
 	return;
@@ -142,56 +147,35 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 {
 	int id = 0;
-	Vector3 pos;
+	Player transmittedPlayerData;
 
 	Packet::Player::Move *data = reinterpret_cast<Packet::Player::Move*>(packet);
 
 	id = data->id;
-	pos.x = data->posX;
-	pos.y = data->posY;
-	pos.z = data->posZ;
+	transmittedPlayerData.pos.x = data->posX;
+	transmittedPlayerData.pos.y = data->posY;
+	transmittedPlayerData.pos.z = data->posZ;
 
-	if (gClientsList[id].isConnect)
-	{
-		gClientsList[id].player.pos.x = pos.x;
-		gClientsList[id].player.pos.y = pos.y;
-		gClientsList[id].player.pos.z = pos.z;
-	}
+	gClientInfoSet->Update(id, transmittedPlayerData);
 	
 	std::string debugText = "OnReceivePlayerMovePacket::Pos("
-		+ std::to_string(gClientsList[id].player.pos.x) + ", " + std::to_string(gClientsList[id].player.pos.y) + ", " + std::to_string(gClientsList[id].player.pos.z) + ")";
+		+ std::to_string(transmittedPlayerData.pos.x) + ", " + std::to_string(transmittedPlayerData.pos.y) + ", " + std::to_string(transmittedPlayerData.pos.z) + ")";
 	DisplayDebugText(debugText);
 
-	for (int ci = 0; ci < MAX_USER; ++ci)
-	{
-		if (!gClientsList[ci].isConnect) continue;
-		if (gClientsList[ci].id == key) continue;
-		SendPacket(ci, packet);
-	}
+	BroadcastingExceptIndex(key, packet);
 
 	return;
 }
 
 void OnReceivePacket::PlayerLight(int key, unsigned char* packet)
 {
-	for (int ci = 0; ci < MAX_USER; ++ci)
-	{
-		if (!gClientsList[ci].isConnect) continue;
-		if (gClientsList[ci].id == key) continue;
-		SendPacket(ci, packet);
-	}
-
+	BroadcastingExceptIndex(key, packet);
 	return;
 }
 
 void OnReceivePacket::PlayerShout(int key, unsigned char* packet)
 {
-	for (int ci = 0; ci < MAX_USER; ++ci)
-	{
-		if (!gClientsList[ci].isConnect) continue;
-		if (gClientsList[ci].id == key) continue;
-		SendPacket(ci, packet);
-	}
+	BroadcastingExceptIndex(key, packet);
 	return;
 }
 
@@ -202,12 +186,7 @@ void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 	std::string debugText = "OnReceivePlayer GetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
 	DisplayDebugText(debugText);
 
-	for (int ci = 0; ci < MAX_USER; ++ci)
-	{
-		if (!gClientsList[ci].isConnect) continue;
-		if (gClientsList[ci].id == key) continue;
-		SendPacket(ci, packet);
-	}
+	BroadcastingExceptIndex(key, packet);
 	return;
 }
 
@@ -356,10 +335,7 @@ void SendMonsterSetPatrolPosPacket(void)
 	packet.posZ = gMonster.patrolPos.z;
 	gLock.unlock();
 
-	for (int ci = 0; ci < MAX_USER; ++ci)
-	{
-		if (!gClientsList[ci].isConnect) continue;
-		SendPacket(ci, reinterpret_cast<unsigned char*>(&packet));
-	}
+	Broadcasting(reinterpret_cast<unsigned char*>(&packet));
+
 	return;
 }

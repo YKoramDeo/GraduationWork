@@ -39,7 +39,6 @@ struct Client
 
 extern bool gShutdown;
 extern HANDLE ghIOCP;
-extern Client gClientsList[MAX_USER];
 
 void DisplayErrMsg(char*, int);
 void DisplayDebugText(std::string);

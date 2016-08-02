@@ -100,9 +100,12 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 	std::string debugText = "";
 
 	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
-	gClientsList[data->id].player.pos.x = data->posX;
-	gClientsList[data->id].player.pos.y = data->posY;
-	gClientsList[data->id].player.pos.z = data->posZ;
+	Player transmittedPlayerData;
+	transmittedPlayerData.pos.x = data->posX;
+	transmittedPlayerData.pos.y = data->posY;
+	transmittedPlayerData.pos.z = data->posZ;
+
+	gClientInfoSet->Update(key, transmittedPlayerData);
 
 	// 다른 클라이언트에게 새로운 클라이언트 알림
 	for (int ci = 0; ci < MAX_USER; ++ci)

@@ -214,6 +214,7 @@ public:
 			LFNode *succ = curr->GetNext();
 			if (!curr->AttemptMark(succ, true)) continue;
 			//pred->CAS(curr, succ, false, false);
+			Rearrangement();
 			return true;
 		}
 	}
@@ -232,7 +233,7 @@ public:
 		return (id == curr->data.id) && (!marked);
 	}
 
-	bool Update(int id)
+	bool Update(int id, Player player)
 	{
 		LFNode *pred, *curr;
 
@@ -242,16 +243,15 @@ public:
 				return false;
 			else
 			{
-				LFNode *succ = curr->GetNext();
-				if (!curr->AttemptMark(succ, true)) continue;
-				//pred->CAS(curr, succ, false, false);
-				std::cout << "update complete!" << std::endl;
+				curr->data.player.pos.x = player.pos.x;
+				curr->data.player.pos.y = player.pos.y;
+				curr->data.player.pos.z = player.pos.z;
 				return true;
 			}
 		}
 	}
 
-	void CleanElement()
+	void Rearrangement()
 	{
 		LFNode *pred, *curr;
 		Find(&pred, &curr, MIN_INT);
@@ -273,6 +273,16 @@ public:
 			//pred->CAS(curr, succ, false, false);
 			return true;
 		}
+	}
+
+	LFNode *GetHead()
+	{
+		return &mHead;
+	}
+
+	LFNode *GetTail()
+	{
+		return &mTail;
 	}
 
 private:

@@ -81,6 +81,7 @@ void WorkerThreadFunc(void)
 	DWORD ioSize, key;
 	OverlapEx *overlap;
 	BOOL result;
+	Client *clientData = nullptr;
 
 	while (true)
 	{
@@ -93,7 +94,10 @@ void WorkerThreadFunc(void)
 
 			if (WSAENOTSOCK == GetLastError() || ERROR_NETNAME_DELETED == GetLastError() || 0 == ioSize)
 			{
-				closesocket(gClientsList[key].socket);
+				std::cout << "What???" << std::endl;
+				gClientInfoSet->Search(key, &clientData);
+				clientData->isConnect = false;
+				closesocket(clientData->socket);
 
 				// ToDo : 10054 error 처리
 				// 각 플레이어에게 플레이어 접속 종료 알림
@@ -108,8 +112,7 @@ void WorkerThreadFunc(void)
 					if (ci == key) continue;
 					SendPacket(ci, reinterpret_cast<unsigned char*>(&packet));
 				}
-
-				gClientsList[key].isConnect = false;
+				gClientInfoSet->Remove(key);
 
 				std::string debugText = "WorkerThreadFunc	::Disconnect " + std::to_string(key) + " client. :(";
 				DisplayDebugText(debugText);
@@ -118,14 +121,16 @@ void WorkerThreadFunc(void)
 		}
 		if (OP_RECV == overlap->operation)
 		{
+			gClientInfoSet->Search(key, &clientData);
+			clientData->isConnect = false;
 
 			unsigned char *buf_ptr = overlap->buffer;
 			int remained = ioSize;
 			while (0 < remained)
 			{
-				if (0 == gClientsList[key].recvOverlap.packetSize)
-					gClientsList[key].recvOverlap.packetSize = buf_ptr[0];
-				int required = gClientsList[key].recvOverlap.packetSize - gClientsList[key].previousDataSize;
+				if (0 == clientData->recvOverlap.packetSize)
+					clientData->recvOverlap.packetSize = buf_ptr[0];
+				int required = clientData->recvOverlap.packetSize - clientData->previousDataSize;
 				// 패킷을 완성 시킬 수 있는가? 없는가?
 				if (remained >= required)
 				{
@@ -134,32 +139,32 @@ void WorkerThreadFunc(void)
 					// 그래서 패킷을 완성시키는 저장공간이 별도로 있어야한다. 
 					// 데이터가 패킷단위로 오는 것이 아니기 때문에 패킷단위로 처리하고 남은데이터는 그 별도의 공간에 저장해야
 					// 다음의 온 데이터가 온전하지 못한 채로 오게되면 별도의 공간에 집어넣고 하나의 패킷으로 마저 만들어 주어야 한다.
-					memcpy(gClientsList[key].packetBuf + gClientsList[key].previousDataSize, buf_ptr, required);
+					memcpy(clientData->packetBuf + clientData->previousDataSize, buf_ptr, required);
 					// +하는 이유는 지난번에 받은 데이터 이후에 저장을 해야하기 때문에 그 시작위치로 옮겨줌.
-					ProcessPacket(key, gClientsList[key].packetBuf);
+					ProcessPacket(key, clientData->packetBuf);
 					// Packet 처리
 					remained -= required;
 					// 날아 있는 것은 필요한 것을 제외하고
 					buf_ptr += required;
 					// ???
-					gClientsList[key].recvOverlap.packetSize = 0;
+					clientData->recvOverlap.packetSize = 0;
 				}
 				else
 				{
 					// 패킷을 완성 시킬 수 없는 크기이다.
-					memcpy(gClientsList[key].packetBuf + gClientsList[key].previousDataSize, buf_ptr, remained);
+					memcpy(clientData->packetBuf + clientData->previousDataSize, buf_ptr, remained);
 					// buf_ptr의 모든 것을 packet에 저장한다.
-					gClientsList[key].previousDataSize += remained;
+					clientData->previousDataSize += remained;
 					// 이전의 데이터가 남아있는 사이즈만큼 늘어났다.
 					remained = 0;
 					// 현재 recv의 남아있는 size는 이미 저장을 해두었으므로 초기화
 				}
 			}
 			DWORD flags = 0;
-			WSARecv(gClientsList[key].socket,
-				&gClientsList[key].recvOverlap.wsaBuf,
+			WSARecv(clientData->socket,
+				&clientData->recvOverlap.wsaBuf,
 				1, NULL, &flags,
-				reinterpret_cast<LPWSAOVERLAPPED>(&gClientsList[key].recvOverlap),
+				reinterpret_cast<LPWSAOVERLAPPED>(&clientData->recvOverlap),
 				NULL);
 		}
 		else if (OP_SEND == overlap->operation)
@@ -189,6 +194,7 @@ void AcceptThreadFunc(void)
 {
 	int retval = 0;
 	struct sockaddr_in listenAddr;
+	int newID = -1;
 
 	SOCKET acceptSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	if (INVALID_SOCKET == acceptSocket)
@@ -233,7 +239,6 @@ void AcceptThreadFunc(void)
 		struct sockaddr_in clientAddr;
 		int addrSize = sizeof(clientAddr);
 
-		int newID = -1;
 		// 접속한 클라이언트의 새 ID
 
 		// accept() : 접속한 클라이언트와 통신할 수 있도록 새로운 소켓을 생성해서 리턴 또한 접속한 클라이언트의 주소정보도 알려줌
@@ -249,21 +254,7 @@ void AcceptThreadFunc(void)
 		}
 
 		// 접속한 클라이언트의 새로운 ID 부여하는 구간 
-		for (auto ci = 0; ci < MAX_USER; ++ci)
-		{
-			if (gClientsList[ci].isConnect == false)
-			{
-				newID = ci;
-				break;
-			}
-		}
-
-		if (-1 == newID)
-		{
-			DisplayDebugText("AcceptThread::Maximum User Number fail !!");
-			closesocket(newClientSocket);
-			continue;
-		}
+		newID++;
 
 		// Accept를 받은 이후에 등록을 해주어야 함
 		HANDLE result = CreateIoCompletionPort(reinterpret_cast<HANDLE>(newClientSocket), ghIOCP, newID, 0);
@@ -274,30 +265,18 @@ void AcceptThreadFunc(void)
 			continue;
 		}
 
-		gClientsList[newID].id = newID;
-		gClientsList[newID].isConnect = true;
-		gClientsList[newID].socket = newClientSocket;
-		memset(&gClientsList[newID].recvOverlap.originalOverlap, 0, sizeof(WSAOVERLAPPED));
-		// WSARecv, WSASend를 하기 이전에는 원래의 Overlap 구조체를 초기화를 해주어야 한다.
-		// 그렇지 않으면 가끔식 err_number 6인 "핸들이 없습니다."라는 오류를 보내온다.
-		ZeroMemory(gClientsList[newID].recvOverlap.buffer, MAX_BUFF_SIZE);
-		gClientsList[newID].recvOverlap.wsaBuf.buf = reinterpret_cast<CHAR*>(gClientsList[newID].recvOverlap.buffer);
-		gClientsList[newID].recvOverlap.wsaBuf.len = MAX_BUFF_SIZE;
-		gClientsList[newID].recvOverlap.operation = OP_RECV;
-		gClientsList[newID].recvOverlap.packetSize = 0;
-		ZeroMemory(gClientsList[newID].packetBuf, MAX_BUFF_SIZE);
-		gClientsList[newID].previousDataSize = 0;
-		// newClient.player 내용 채우기
-		gClientsList[newID].player.pos.x = 247.92f;
-		gClientsList[newID].player.pos.y = -4.29f;
-		gClientsList[newID].player.pos.z = -1.23f;
-
 		gClientInfoSet->Add(newID);
+		Player playerData;
+		playerData.pos.x = 247.92f;
+		playerData.pos.y = -4.29f;
+		playerData.pos.z = -1.23f;
+		gClientInfoSet->Update(newID, playerData);
 		gClientInfoSet->CheckElement();
 
-		Client *tempData = nullptr;
-		gClientInfoSet->Search(newID, &tempData);
-		std::cout << tempData->id << " " <<tempData->isConnect << " : " << tempData->player.pos.x << ", " << tempData->player.pos.y << ", " << tempData->player.pos.z << std::endl;
+		Client *clientData = nullptr;
+		gClientInfoSet->Search(newID, &clientData);
+		clientData->socket = newClientSocket;
+		std::cout << clientData->id << " " << clientData->isConnect << " : " << clientData->player.pos.x << ", " << clientData->player.pos.y << ", " << clientData->player.pos.z << std::endl;
 
 		// 새로운 클라이언트 접속 알림
 		Packet::SetID clientSetIDPacket;
@@ -309,7 +288,7 @@ void AcceptThreadFunc(void)
 		// 새로운 소켓 Recv 수행
 		DWORD flags = 0;
 		// WSARecv() : 5번째, 6번째 두 인자를 NULL 값으로 사용하면 recv() 함수처럼 동기 함수로 동작
-		retval = WSARecv(newClientSocket, &gClientsList[newID].recvOverlap.wsaBuf, 1, NULL, &flags, &gClientsList[newID].recvOverlap.originalOverlap, NULL);
+		retval = WSARecv(newClientSocket, &clientData->recvOverlap.wsaBuf, 1, NULL, &flags, &clientData->recvOverlap.originalOverlap, NULL);
 		if (0 != retval)
 		{
 			int errNo = WSAGetLastError();
@@ -338,7 +317,11 @@ void SendPacket(const int index, const unsigned char* packet)
 	sendOverlap->wsaBuf.buf = reinterpret_cast<CHAR*>(sendOverlap->buffer);
 	sendOverlap->wsaBuf.len = packet[0];
 	memcpy(sendOverlap->buffer, packet, packet[0]);
-	retval = WSASend(gClientsList[index].socket, &sendOverlap->wsaBuf, 1, NULL, 0, &sendOverlap->originalOverlap, NULL);
+
+	Client *clientData = nullptr;
+	gClientInfoSet->Search(index, &clientData);
+
+	retval = WSASend(clientData->socket, &sendOverlap->wsaBuf, 1, NULL, 0, &sendOverlap->originalOverlap, NULL);
 	if (0 != retval)
 	{
 		int errNo = WSAGetLastError();
@@ -346,8 +329,8 @@ void SendPacket(const int index, const unsigned char* packet)
 			DisplayErrMsg("SendPacket::WSASend", errNo);
 		if (WSAECONNABORTED == errNo)
 		{
-			closesocket(gClientsList[index].socket);
-
+			closesocket(clientData->socket);
+			
 			// ToDo : 10054 error 처리
 			// 각 플레이어에게 플레이어 접속 종료 알림
 			Packet::Disconnect packet;
@@ -362,7 +345,8 @@ void SendPacket(const int index, const unsigned char* packet)
 				SendPacket(ci, reinterpret_cast<unsigned char*>(&packet));
 			}
 
-			gClientsList[index].isConnect = false;
+			clientData->isConnect = false;
+			gClientInfoSet->Remove(index);
 			DisplayDebugText("SendPacket::Process error 10053.");
 		}
 	}

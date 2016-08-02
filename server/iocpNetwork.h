@@ -52,3 +52,6 @@ void SendPacket(const int, const unsigned char*);
 
 extern void ProcessPacket(int, unsigned char*);
 extern bool BeCompeletedSendPacket(BYTE, BYTE);
+
+extern void BroadcastingExceptIndex(const int, const unsigned char*);
+extern void Broadcasting(const unsigned char*);

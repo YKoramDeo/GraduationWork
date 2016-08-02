@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
 	StopServer();
 
-	gClientInfoSet->CleanElement();
+	gClientInfoSet->Rearrangement();
 	while (0 != gClientInfo_DelList->next)
 	{
 		LFNode *temp = gClientInfo_DelList;

@@ -87,7 +87,7 @@ void ProcessPacket(int key, unsigned char *packet)
 		OnReceivePacket::MonsterMove(key, packet);
 		break;
 	default:
-		debugText = std::to_string(key) + " ProcessPacket::Unknown Packet Type Detected";
+		debugText = "ProcessPacket :: Unknown Packet Type Detected from. " + std::to_string(key);
 		DisplayDebugText(debugText);
 		return;
 	}
@@ -97,7 +97,6 @@ void ProcessPacket(int key, unsigned char *packet)
 
 void OnReceivePacket::Connect(int key, unsigned char* packet)
 {
-	std::cout << "Connect Packet Called!!" << std::endl;
 	std::string debugText = "";
 
 	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
@@ -136,11 +135,13 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 				preOtherPlayerPacket.posY = curr->data.player.pos.y;
 				preOtherPlayerPacket.posZ = curr->data.player.pos.z;
 				SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
+
+				debugText = "ProcessPacket :: OnReceive Connect Packet :: Send " + std::to_string(curr->data.id) + " client data To. " + std::to_string(key);
+				DisplayDebugText(debugText);
 			}
 			pred = curr;
 		}
 	}
-
 	return;
 }
 
@@ -158,7 +159,7 @@ void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 
 	gClientInfoSet->Update(id, transmittedPlayerData);
 	
-	std::string debugText = "OnReceivePlayerMovePacket::Pos("
+	std::string debugText = "ProcessPacket :: OnReceive PlayerMove Packet :: " + std::to_string(id) +" client Pos("
 		+ std::to_string(transmittedPlayerData.pos.x) + ", " + std::to_string(transmittedPlayerData.pos.y) + ", " + std::to_string(transmittedPlayerData.pos.z) + ")";
 	DisplayDebugText(debugText);
 
@@ -183,7 +184,7 @@ void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 {
 	Packet::Player::GetItem *data = reinterpret_cast<Packet::Player::GetItem*>(packet);
 
-	std::string debugText = "OnReceivePlayer GetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
+	std::string debugText = "ProcessPacket :: OnReceive PlayerGetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
 	DisplayDebugText(debugText);
 
 	BroadcastingExceptIndex(key, packet);
@@ -212,7 +213,7 @@ void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 	gMonster.pos.y = data->posY;
 	gMonster.pos.z = data->posZ;
 	
-	std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPos (" 
+	std::string debugText = "ProcessPacket :: OnReceive MonsterMove Packet :: Current Monster Pos (" 
 		+ std::to_string(gMonster.pos.x) + ", " + std::to_string(gMonster.pos.y) + ", " + std::to_string(gMonster.pos.z) + ")";
 	gLock.unlock();
 	//DisplayDebugText(debugText);
@@ -270,12 +271,8 @@ void SendMonsterSetInfoPacket(int key)
 
 	std::string debugText = "";
 	gLock.lock();
-	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Pos(" 
-		+ std::to_string((int)gMonster.pos.x) + ", " + std::to_string((int)gMonster.pos.y) + ", " + std::to_string((int)gMonster.pos.z) + ")";
-	DisplayDebugText(debugText);
-	
-	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Patrol Pos("
-		+ std::to_string((int)gMonster.patrolPos.x) + ", " + std::to_string((int)gMonster.patrolPos.y) + ", " + std::to_string((int)gMonster.patrolPos.z) + ")";
+	debugText = "ProcessPacket :: Send MonsterSetIntfo Packet :: Send Monster Pos ("
+		+ std::to_string((int)gMonster.pos.x) + ", " + std::to_string((int)gMonster.pos.y) + ", " + std::to_string((int)gMonster.pos.z) + ") Data To. " + std::to_string(key);
 	gLock.unlock();
 	DisplayDebugText(debugText);
 

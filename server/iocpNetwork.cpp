@@ -43,7 +43,7 @@ void InitializeServer(void)
 	//					: 시스템이 지원하는 윈속 최상위 버전 등)를 얻을 수 있음. 하지만 실제로 이런 정보 사용 X
 	if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0)
 	{
-		DisplayDebugText("InitializeServer::WSAStartup Fail !!");
+		DisplayDebugText("InitializeServer :: WSAStartup Fail !!");
 		exit(1);
 	}
 
@@ -56,7 +56,7 @@ void InitializeServer(void)
 	ghIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 0);
 	if (NULL == ghIOCP)
 	{
-		DisplayDebugText("InitializeServer::CreateIoCompletionPort Fail !!");
+		DisplayDebugText("InitializeServer :: CreateIoCompletionPort Fail !!");
 		exit(1);
 	}
 
@@ -68,7 +68,7 @@ void StopServer(void)
 	gClientInfoSet->Initialize();
 
 	WSACleanup();
-	DisplayDebugText("Stop Server::Called!!");
+	DisplayDebugText("Stop Server :: Called!!");
 	return;
 }
 
@@ -86,7 +86,7 @@ void WorkerThreadFunc(void)
 		if (false == result || 0 == ioSize)
 		{
 			if (false == result)
-				DisplayErrMsg("WorkerThreadFunc::GetQueuedCompletionStatus Fail !!", GetLastError());
+				DisplayErrMsg("WorkerThread :: GetQueuedCompletionStatus Fail !!", GetLastError());
 
 			if (WSAENOTSOCK == GetLastError() || ERROR_NETNAME_DELETED == GetLastError() || 0 == ioSize)
 			{
@@ -104,7 +104,7 @@ void WorkerThreadFunc(void)
 				BroadcastingExceptIndex(key, reinterpret_cast<unsigned char*>(&packet));
 				gClientInfoSet->Remove(key);
 
-				std::string debugText = "WorkerThreadFunc	::Disconnect " + std::to_string(key) + " client. :(";
+				std::string debugText = "WorkerThread :: Disconnect " + std::to_string(key) + " client. :(";
 				DisplayDebugText(debugText);
 			}
 			continue;
@@ -166,13 +166,13 @@ void WorkerThreadFunc(void)
 				delete overlap;
 			else
 			{
-				std::string debugText = "WorkerThreadFunc:: " + std::to_string(key) + " client don't send " + std::to_string(packetType) + "No. packet";
+				std::string debugText = "WorkerThread :: " + std::to_string(key) + " client don't send " + std::to_string(packetType) + "No. packet";
 				DisplayDebugText(debugText);
 			}
 		}
 		else
 		{
-			DisplayDebugText("WorkerThreadFunc::Unknown Event on worker_thread");
+			DisplayDebugText("WorkerThread :: Unknown Event on worker_thread");
 			continue;
 		}
 	}
@@ -188,7 +188,7 @@ void AcceptThreadFunc(void)
 	SOCKET acceptSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	if (INVALID_SOCKET == acceptSocket)
 	{
-		DisplayErrMsg("AcceptThreadFunc::acceptSocket Fail !!", WSAGetLastError());
+		DisplayErrMsg("AcceptThread :: acceptSocket Fail !!", WSAGetLastError());
 		return;
 	}
 
@@ -208,7 +208,7 @@ void AcceptThreadFunc(void)
 	retval = ::bind(acceptSocket, reinterpret_cast<sockaddr*>(&listenAddr), sizeof(listenAddr));
 	if (SOCKET_ERROR == retval)
 	{
-		DisplayErrMsg("AcceptThreadFunc::bind Fail !!", WSAGetLastError());
+		DisplayErrMsg("AcceptThread :: bind Fail !!", WSAGetLastError());
 		exit(1);
 	}
 	// listen() : 소켓의 TCP 포트 상태를 LISTENING으로 바꾼다. 이는 클라이언트 접속을 받아들일 수 있는 상태가 됨을 의미
@@ -219,7 +219,7 @@ void AcceptThreadFunc(void)
 	listen(acceptSocket, SOMAXCONN);
 	if (SOCKET_ERROR == retval)
 	{
-		DisplayErrMsg("AcceptThreadFunc::listen Fail !!", WSAGetLastError());
+		DisplayErrMsg("AcceptThread :: listen Fail !!", WSAGetLastError());
 		exit(1);
 	}
 
@@ -238,7 +238,7 @@ void AcceptThreadFunc(void)
 		SOCKET newClientSocket = WSAAccept(acceptSocket, reinterpret_cast<sockaddr*>(&clientAddr), &addrSize, NULL, NULL);
 		if (INVALID_SOCKET == newClientSocket)
 		{
-			DisplayErrMsg("AcceptThreadFunc::WSAAccept Fail !!", WSAGetLastError());
+			DisplayErrMsg("AcceptThread :: WSAAccept Fail !!", WSAGetLastError());
 			break;
 		}
 
@@ -249,7 +249,7 @@ void AcceptThreadFunc(void)
 		HANDLE result = CreateIoCompletionPort(reinterpret_cast<HANDLE>(newClientSocket), ghIOCP, newID, 0);
 		if (NULL == result)
 		{
-			DisplayErrMsg("AcceptThreadFunc::CreateIoCompletionPort Fail !!", WSAGetLastError());
+			DisplayErrMsg("AcceptThread :: CreateIoCompletionPort Fail !!", WSAGetLastError());
 			closesocket(newClientSocket);
 			continue;
 		}
@@ -260,13 +260,11 @@ void AcceptThreadFunc(void)
 		playerData.pos.y = -4.29f;
 		playerData.pos.z = -1.23f;
 		gClientInfoSet->Update(newID, playerData);
-		gClientInfoSet->CheckElement();
-
+		
 		Client *clientData = nullptr;
 		gClientInfoSet->Search(newID, &clientData);
 		clientData->socket = newClientSocket;
-		std::cout << clientData->id << " " << clientData->isConnect << " : " << clientData->player.pos.x << ", " << clientData->player.pos.y << ", " << clientData->player.pos.z << std::endl;
-
+		
 		// 새로운 클라이언트 접속 알림
 		Packet::SetID clientSetIDPacket;
 		clientSetIDPacket.size = sizeof(Packet::SetID);
@@ -283,12 +281,12 @@ void AcceptThreadFunc(void)
 			int errNo = WSAGetLastError();
 			if (WSA_IO_PENDING != errNo)
 			{
-				DisplayErrMsg("AcceptThreadFunc::WSARecv", errNo);
+				DisplayErrMsg("AcceptThread :: WSARecv", errNo);
 			}
 		}
 
 		// Output
-		std::string debugText = "AcceptThreadFunc	:: " + std::to_string(newID) + " client Accept Success !!";
+		std::string debugText = "AcceptThread :: ID " + std::to_string(newID) + " client Accept Success !!";
 		DisplayDebugText(debugText);
 	}
 
@@ -315,7 +313,7 @@ void SendPacket(const int index, const unsigned char* packet)
 	{
 		int errNo = WSAGetLastError();
 		if (WSA_IO_PENDING != errNo)
-			DisplayErrMsg("SendPacket::WSASend", errNo);
+			DisplayErrMsg("SendPacket :: WSASend", errNo);
 		if (WSAECONNABORTED == errNo)
 		{
 			clientData->isConnect = false;
@@ -331,7 +329,7 @@ void SendPacket(const int index, const unsigned char* packet)
 			BroadcastingExceptIndex(index, reinterpret_cast<unsigned char*>(&packet));
 
 			gClientInfoSet->Remove(index);
-			DisplayDebugText("SendPacket::Process error 10053.");
+			DisplayDebugText("SendPacket :: Process error 10053.");
 		}
 	}
 	return;

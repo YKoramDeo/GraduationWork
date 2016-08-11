@@ -130,7 +130,7 @@ void WorkerThreadFunc(void)
 					// 다음의 온 데이터가 온전하지 못한 채로 오게되면 별도의 공간에 집어넣고 하나의 패킷으로 마저 만들어 주어야 한다.
 					memcpy(clientData->packetBuf + clientData->previousDataSize, buf_ptr, required);
 					// +하는 이유는 지난번에 받은 데이터 이후에 저장을 해야하기 때문에 그 시작위치로 옮겨줌.
-					//ProcessPacket(key, clientData->packetBuf);
+					ProcessPacket(key, clientData->packetBuf);
 					// Packet 처리
 					remained -= required;
 					// 날아 있는 것은 필요한 것을 제외하고

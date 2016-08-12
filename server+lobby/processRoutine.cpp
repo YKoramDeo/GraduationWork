@@ -8,6 +8,10 @@ bool BeCompeletedSendPacket(BYTE type, BYTE size)
 		if (size != sizeof(Packet::SetID)) 
 			return false; 
 		break;
+	case PacketType::Notify:
+		if (size != sizeof(Packet::Notify))
+			return false;
+		break;
 	case PacketType::Connect:
 		if (size != sizeof(Packet::Connect))
 			return false;
@@ -22,7 +26,7 @@ bool BeCompeletedSendPacket(BYTE type, BYTE size)
 		break;
 	case PacketType::PlayerLight:
 		if (size != sizeof(Packet::Player::Light))
-			return false;
+			return false; 
 		break;
 	case PacketType::PlayerShout:
 		if (size != sizeof(Packet::Player::Shout))
@@ -60,6 +64,9 @@ void ProcessPacket(int key, unsigned char *packet)
 
 	switch (packetType)
 	{
+	case (BYTE)PacketType::Notify:
+		OnReceivePacket::Notify(key, packet);
+		break;
 	case (BYTE)PacketType::Connect:
 		// Connect 동기화 하는 Packet
 //		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
@@ -92,6 +99,18 @@ void ProcessPacket(int key, unsigned char *packet)
 		return;
 	}
 
+	return;
+}
+
+void OnReceivePacket::Notify(int key, unsigned char* packet)
+{
+	std::string debugText = "";
+	Packet::Notify *data = reinterpret_cast<Packet::Notify*>(packet);
+	int id = data->id;
+	int notice = data->notice;
+
+	debugText = "ProcessPacket :: OnReceive Notify Packet :: Send " + std::to_string(data->notice) + " from. " + std::to_string(data->id);
+	DisplayDebugText(debugText);
 	return;
 }
 

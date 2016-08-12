@@ -25,6 +25,7 @@ enum PacketType
 	SetID,
 	Connect,
 	Disconnect,
+	Notify,
 	PlayerMove,
 	PlayerLight,
 	PlayerShout,
@@ -32,6 +33,11 @@ enum PacketType
 	MonsterSetInfo,
 	MonsterMove,
 	MonsterSetPatrolPos
+};
+
+enum Notice
+{
+	MAKE_ROOM = 100
 };
 
 #pragma pack(push,1)
@@ -59,6 +65,14 @@ namespace Packet
 		BYTE size;
 		BYTE type;
 		int id;
+	};
+
+	struct Notify
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		int notice;
 	};
 
 	namespace Player

@@ -17,6 +17,7 @@ void ProcessPacket(int, unsigned char*);
 
 namespace OnReceivePacket
 {
+	void Notify(int, unsigned char*);
 	void Connect(int, unsigned char*);
 	void PlayerMove(int, unsigned char*);
 	void PlayerLight(int, unsigned char*);

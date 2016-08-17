@@ -23,21 +23,23 @@
 enum PacketType
 {
 	SetID,
-	Connect,
 	Disconnect,
 	Notify,
-	PlayerMove,
-	PlayerLight,
-	PlayerShout,
-	PlayerGetItem,
-	MonsterSetInfo,
-	MonsterMove,
-	MonsterSetPatrolPos
+	CreateRoom,
+	JoinRoom,
+	RenewalRoomInfo
 };
 
 enum Notice
 {
-	MAKE_ROOM = 100
+	RECV_SET_ID = 100,
+	MAKE_ROOM,
+	QUIT_ROOM,
+	UPDATE_ROOM,
+	JOIN_FAIL,
+	GAME_READY,
+	CANCEL_READY,
+	GAME_START
 };
 
 #pragma pack(push,1)
@@ -48,16 +50,6 @@ namespace Packet
 		BYTE size;
 		BYTE type;
 		int id;
-	};
-
-	struct Connect
-	{
-		BYTE size;
-		BYTE type;
-		int id;
-		float posX;
-		float posY;
-		float posZ;
 	};
 
 	struct Disconnect
@@ -75,90 +67,37 @@ namespace Packet
 		int notice;
 	};
 
-	namespace Player
+	struct CreateRoom
 	{
-		struct Move
-		{
-			BYTE size;
-			BYTE type;
-			int id;
-			float posX;
-			float posY;
-			float posZ;
+		BYTE size;
+		BYTE type;
+		int roomNo;
+		int chiefNo;
+		int partner_1_ID;
+		int partner_2_ID;
+		int partner_3_ID;
+	};
 
-			float dirX;
-			float dirY;
-			float dirZ;
-
-			float horizental;
-			float vertical;
-			bool sneak;
-		};
-
-		struct Light
-		{
-			BYTE size;
-			BYTE type;
-			int id;
-			bool on;
-			float rotX;
-			float rotY;
-			float rotZ;
-			float rotW;
-		};
-
-		struct Shout
-		{
-			BYTE size;
-			BYTE type;
-			int id;
-			bool shouting;
-			float posX;
-			float posY;
-			float posZ;
-		};
-
-		struct GetItem
-		{
-			BYTE size;
-			BYTE type;
-			int id;
-			int itemID;
-		};
-	}
-
-	namespace Monster
+	struct JoinRoom
 	{
-		struct SetInfo
-		{
-			BYTE size;
-			BYTE type;
-			float posX;
-			float posY;
-			float posZ;
-			float patrolPosX;
-			float patrolPosY;
-			float patrolPosZ;
-		};
+		BYTE size;
+		BYTE type;
+		int roomNo;
+	};
 
-		struct Move
-		{
-			BYTE size;
-			BYTE type;
-			float posX;
-			float posY;
-			float posZ;
-		};
-
-		struct SetPatrolPos
-		{
-			BYTE size;
-			BYTE type;
-			float posX;
-			float posY;
-			float posZ;
-		};
-	}
+	struct RenewalRoomInfo
+	{
+		BYTE size;
+		BYTE type;
+		int roomNo;
+		int chiefNo;
+		int partner_1_ID;
+		bool partner_1_ready;
+		int partner_2_ID;
+		bool partner_2_ready;
+		int partner_3_ID;
+		bool partner_3_ready;
+	};
 }
 #pragma pack(pop)
 

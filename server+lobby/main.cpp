@@ -3,29 +3,33 @@
 #include "defaultInit.h"
 #include "iocpNetwork.h"
 #include "processRoutine.h"
-#include "lock-free_synchronization.h"
+#include "lock-free-SET_ClientInfo.h"
+#include "lock-free-SET_RoomInfo.h"
 
 bool gShutdown = false;
 HANDLE ghIOCP;
 
-LFList *gClientInfoSet;
-LFNode *gClientInfo_DelList = nullptr;
+ClientList *gClientInfoSet;
+ClientNode *gClientInfo_DelList = nullptr;
 std::mutex gClientInfo_DelList_Lock;
 
-Monster gMonster;
-Vector3 monsterPath[NUM_OF_MONSTER_PATH];
-std::mutex gLock;
+RoomList *gRoomInfoSet;
+RoomNode *gRoomInfo_DelList = nullptr;
+std::mutex gRoomInfo_DelList_Lock;
 
 int main(int argc, char *argv[])
 {
 	std::vector<std::thread*> workerThreads;
 	std::thread acceptThread;
-	gClientInfoSet = new LFList();
-	gClientInfo_DelList = new LFNode(MIN_INT);
+	gClientInfoSet = new ClientList();
+	gClientInfo_DelList = new ClientNode(MIN_INT);
+
+	gRoomInfoSet = new RoomList();
+	gRoomInfo_DelList = new RoomNode(MIN_INT);
 
 	gClientInfoSet->Initialize();
+	gRoomInfoSet->Initialize();
 	InitializeServer();
-	InitializeMonster();
 
 	acceptThread = std::thread(AcceptThreadFunc);
 	for (int i = 0; i < NUM_THREADS; ++i)
@@ -47,13 +51,24 @@ int main(int argc, char *argv[])
 	gClientInfoSet->Rearrangement();
 	while (0 != gClientInfo_DelList->next)
 	{
-		LFNode *temp = gClientInfo_DelList;
+		ClientNode *temp = gClientInfo_DelList;
 		gClientInfo_DelList = gClientInfo_DelList->GetNext();
+		delete temp;
+	}
+
+	gRoomInfoSet->Rearrangement();
+	while (0 != gRoomInfo_DelList->next)
+	{
+		RoomNode *temp = gRoomInfo_DelList;
+		gRoomInfo_DelList = gRoomInfo_DelList->GetNext();
 		delete temp;
 	}
 
 	delete gClientInfo_DelList;
 	delete gClientInfoSet;
+
+	delete gRoomInfo_DelList;
+	delete gRoomInfoSet;
 
 	return 0;
 }

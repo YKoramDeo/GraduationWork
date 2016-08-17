@@ -11,7 +11,8 @@
 
 #include "protocol.h"
 #include "defaultInit.h"
-#include "lock-free_synchronization.h"
+#include "lock-free-SET_ClientInfo.h"
+#include "lock-free-SET_RoomInfo.h"
 
 /*
 struct OverlapEx
@@ -54,3 +55,5 @@ extern bool BeCompeletedSendPacket(BYTE, BYTE);
 
 extern void BroadcastingExceptIndex(const int, const unsigned char*);
 extern void Broadcasting(const unsigned char*);
+extern void BroadcastingExceptIndex_With_UpdateRoomInfo(const int);
+extern void UpdateRoomInfo(const unsigned int);

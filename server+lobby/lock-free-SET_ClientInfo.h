@@ -2,28 +2,17 @@
 #include "stdafx.h"
 #include "defaultInit.h"
 
-#define MAX_INT 0x80000000
-#define MIN_INT 0x7FFFFFFF
-
-/*
-struct Data
-{
-	int id;
-};
-*/
-
-typedef Client Data;
-
-class LFNode
+class ClientNode
 {
 public:
-	Data data;
+	int id;
+	Client data;
 	int next;
 	
-	LFNode() { next = 0; }
-	LFNode(int value) {
+	ClientNode() { next = 0; }
+	ClientNode(int value) {
 		next = 0;
-		data.id = value;
+		this->id = value;
 		data.isConnect = true;
 		data.socket = NULL;
 		memset(&data.recvOverlap.originalOverlap, 0, sizeof(WSAOVERLAPPED));
@@ -34,14 +23,15 @@ public:
 		data.recvOverlap.packetSize = 0;
 		ZeroMemory(data.packetBuf, MAX_BUFF_SIZE);
 		data.previousDataSize = 0;
+		data.player.roomNo = 0;
 		data.player.pos.x = 0;
 		data.player.pos.y = 0;
 		data.player.pos.z = 0;
 	}
 
-	LFNode(Data data) {
+	ClientNode(int id, Client data) {
 		next = 0;
-		this->data.id = data.id;
+		this->id = id;
 		this->data.isConnect = true;
 		this->data.socket = NULL;
 		memset(&this->data.recvOverlap.originalOverlap, 0, sizeof(WSAOVERLAPPED));
@@ -52,20 +42,21 @@ public:
 		this->data.recvOverlap.packetSize = 0;
 		ZeroMemory(this->data.packetBuf, MAX_BUFF_SIZE);
 		this->data.previousDataSize = 0;
+		this->data.player.roomNo = 0;
 		this->data.player.pos.x = 0;
 		this->data.player.pos.y = 0;
 		this->data.player.pos.z = 0;
 	}
 
-	~LFNode() { }
+	~ClientNode() { }
 
-	LFNode *GetNext() {
-		return reinterpret_cast<LFNode*>(next & 0xFFFFFFFE);
+	ClientNode *GetNext() {
+		return reinterpret_cast<ClientNode*>(next & 0xFFFFFFFE);
 	}
 
-	LFNode *GetNextWithMark(bool *removed) {
+	ClientNode *GetNextWithMark(bool *removed) {
 		*removed = (next & 1) == 1;
-		return reinterpret_cast<LFNode *>(next & 0xFFFFFFFE);
+		return reinterpret_cast<ClientNode *>(next & 0xFFFFFFFE);
 	}
 
 	bool GetMark() {
@@ -79,7 +70,7 @@ public:
 			reinterpret_cast<std::atomic_int *>(&next), &old_value, new_value);
 	}
 
-	bool CAS(LFNode *old_addr, LFNode *new_addr, bool old_mark, bool new_mark) {
+	bool CAS(ClientNode *old_addr, ClientNode *new_addr, bool old_mark, bool new_mark) {
 		int old_value = reinterpret_cast<int>(old_addr);
 		if (true == old_mark) old_value = old_value | 1;
 		else old_value = old_value & 0xFFFFFFFE;
@@ -91,7 +82,7 @@ public:
 		return CAS(old_value, new_value);
 	}
 
-	bool AttemptMark(LFNode* node, bool newMark) {
+	bool AttemptMark(ClientNode* node, bool newMark) {
 		int old_value = reinterpret_cast<int>(node);
 		int new_value = old_value;
 		if (newMark) new_value = new_value | 0x01;
@@ -99,32 +90,32 @@ public:
 		return CAS(old_value, new_value);
 	}
 
-	void SetNext(LFNode *new_next) {
+	void SetNext(ClientNode *new_next) {
 		next = reinterpret_cast<int>(new_next);
 		return;
 	}
 };
 
-extern LFNode *gClientInfo_DelList;
+extern ClientNode *gClientInfo_DelList;
 extern std::mutex gClientInfo_DelList_Lock;
 
-class LFList
+class ClientList
 {
 public:
-	LFList()
+	ClientList()
 	{
-		mHead.data.id = MAX_INT;
-		mTail.data.id = MIN_INT;
+		mHead.id = MAX_INT;
+		mTail.id = MIN_INT;
 		mHead.SetNext(&mTail);
 	}
 
-	~LFList() { Initialize(); }
+	~ClientList() { Initialize(); }
 
 	void Initialize()
 	{
-		LFNode *ptr;
-		LFNode *temp_head = mHead.GetNext();
-		LFNode *temp_tail = &mTail;
+		ClientNode *ptr;
+		ClientNode *temp_head = mHead.GetNext();
+		ClientNode *temp_tail = &mTail;
 		while (mHead.GetNext() != &mTail) {
 			ptr = mHead.GetNext();
 			mHead.SetNext(ptr->GetNext());
@@ -136,13 +127,13 @@ public:
 
 	void CheckElement(void)
 	{
-		LFNode *curr;
+		ClientNode *curr;
 
 		curr = &mHead;
 		std::cout << "data : ";
 		while (curr != 0)
 		{
-			std::cout << curr->data.id << " ";
+			std::cout << curr->id << " ";
 			curr = curr->GetNext();
 		}
 		std::cout << std::endl;
@@ -168,16 +159,16 @@ public:
 		return;
 	}
 
-	bool Add(Data data)
+	bool Add(int id, Client data)
 	{
-		LFNode *pred, *curr;
+		ClientNode *pred, *curr;
 
 		while (true) {
-			Find(&pred, &curr, data.id);
-			if (curr->data.id == data.id)
+			Find(&pred, &curr, id);
+			if (curr->id == id)
 				return false;
 
-			LFNode* newNode = new LFNode(data);
+			ClientNode* newNode = new ClientNode(id, data);
 			newNode->SetNext(curr);
 			if (pred->CAS(curr, newNode, false, false))
 				return true;
@@ -187,14 +178,14 @@ public:
 
 	bool Add(int id)
 	{
-		LFNode *pred, *curr;
+		ClientNode *pred, *curr;
 
 		while (true) {
 			Find(&pred, &curr, id);
-			if (curr->data.id == id)
+			if (curr->id == id)
 				return false;
 
-			LFNode* newNode = new LFNode(id);
+			ClientNode* newNode = new ClientNode(id);
 			newNode->SetNext(curr);
 			if (pred->CAS(curr, newNode, false, false))
 				return true;
@@ -204,15 +195,15 @@ public:
 
 	bool Remove(int id)
 	{
-		LFNode *pred, *curr;
+		ClientNode *pred, *curr;
 
 		while (true)
 		{
 			Find(&pred, &curr, id);
 
-			if (curr->data.id != id)
+			if (curr->id != id)
 				return false;
-			LFNode *succ = curr->GetNext();
+			ClientNode *succ = curr->GetNext();
 			if (!curr->AttemptMark(succ, true)) continue;
 			//pred->CAS(curr, succ, false, false);
 			Rearrangement();
@@ -222,28 +213,29 @@ public:
 
 	bool Contains(int id)
 	{
-		LFNode *succ;
-		LFNode *curr = &mHead;
+		ClientNode *succ;
+		ClientNode *curr = &mHead;
 		bool marked = false;
-		while (curr->data.id < id)
+		while (curr->id < id)
 		{
 			curr = curr->GetNext();
 			succ = curr->GetNextWithMark(&marked);
 		}
 
-		return (id == curr->data.id) && (!marked);
+		return (id == curr->id) && (!marked);
 	}
 
 	bool Update(int id, Player player)
 	{
-		LFNode *pred, *curr;
+		ClientNode *pred, *curr;
 
 		while (true) {
 			Find(&pred, &curr, id);
-			if (curr->data.id != id)
+			if (curr->id != id)
 				return false;
 			else
 			{
+				curr->data.player.roomNo = player.roomNo;
 				curr->data.player.pos.x = player.pos.x;
 				curr->data.player.pos.y = player.pos.y;
 				curr->data.player.pos.z = player.pos.z;
@@ -254,20 +246,20 @@ public:
 
 	void Rearrangement()
 	{
-		LFNode *pred, *curr;
+		ClientNode *pred, *curr;
 		Find(&pred, &curr, MIN_INT);
 		return;
 	}
 
 	bool Search(int index, Client **ref)
 	{
-		LFNode *pred, *curr;
+		ClientNode *pred, *curr;
 		
 		while (true)
 		{
 			Find(&pred, &curr, index);
 
-			if (curr->data.id != index)
+			if (curr->id != index)
 				return false;
 			
 			*ref = &(curr->data);
@@ -276,24 +268,24 @@ public:
 		}
 	}
 
-	LFNode *GetHead()
+	ClientNode *GetHead()
 	{
 		return &mHead;
 	}
 
-	LFNode *GetTail()
+	ClientNode *GetTail()
 	{
 		return &mTail;
 	}
 
 private:
-	LFNode mHead, mTail;
+	ClientNode mHead, mTail;
 
-	void Find(LFNode **pred, LFNode **curr, int id)
+	void Find(ClientNode **pred, ClientNode **curr, int id)
 	{
 		bool marked = false;
 		bool snip = false;
-		LFNode* succ;
+		ClientNode* succ;
 
 	RETRY:
 		*pred = &mHead;
@@ -314,7 +306,7 @@ private:
 				*curr = succ;
 				succ = (*curr)->GetNextWithMark(&marked);
 			}
-			if ((*curr)->data.id >= id) return;
+			if ((*curr)->id >= id) return;
 			(*pred) = (*curr);
 			(*curr) = succ;
 		}
@@ -322,4 +314,4 @@ private:
 	}
 };
 
-extern LFList *gClientInfoSet;
+extern ClientList *gClientInfoSet;

@@ -256,15 +256,19 @@ void AcceptThreadFunc(void)
 
 		gClientInfoSet->Add(newID);
 		Player playerData;
-		playerData.pos.x = 247.92f;
-		playerData.pos.y = -4.29f;
-		playerData.pos.z = -1.23f;
+		playerData.roomNo = 0;
+		playerData.pos.x = DEFAULT_POS_X;
+		playerData.pos.y = DEFAULT_POS_Y;
+		playerData.pos.z = DEFAULT_POS_Z;
 		gClientInfoSet->Update(newID, playerData);
 		
 		Client *clientData = nullptr;
 		gClientInfoSet->Search(newID, &clientData);
 		clientData->socket = newClientSocket;
 		
+		// error code 64를 해결하기 위한 delay를 줌.
+		Sleep(10);
+
 		// 새로운 클라이언트 접속 알림
 		Packet::SetID clientSetIDPacket;
 		clientSetIDPacket.size = sizeof(Packet::SetID);
@@ -338,8 +342,8 @@ void SendPacket(const int index, const unsigned char* packet)
 void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 {
 	bool result = false, marked = false;
-	LFNode *pred, *curr;
-	LFNode *tail = gClientInfoSet->GetTail();
+	ClientNode *pred, *curr;
+	ClientNode *tail = gClientInfoSet->GetTail();
 	pred = gClientInfoSet->GetHead();
 	curr = pred;
 	while (curr->GetNext() != tail)
@@ -347,10 +351,10 @@ void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 		curr = pred->GetNextWithMark(&marked);
 		if (marked) continue;
 
-		result = gClientInfoSet->Contains(curr->data.id);
+		result = gClientInfoSet->Contains(curr->id);
 		if (result) {
-			if (curr->data.isConnect && curr->data.id != index)
-				SendPacket(curr->data.id, packet);
+			if (curr->data.isConnect && curr->id != index)
+				SendPacket(curr->id, packet);
 			pred = curr;
 		}
 	}
@@ -360,8 +364,8 @@ void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 void Broadcasting(const unsigned char* packet)
 {
 	bool result = false, marked = false;
-	LFNode *pred, *curr;
-	LFNode *tail = gClientInfoSet->GetTail();
+	ClientNode *pred, *curr;
+	ClientNode *tail = gClientInfoSet->GetTail();
 	pred = gClientInfoSet->GetHead();
 	curr = pred;
 	while (curr->GetNext() != tail)
@@ -369,12 +373,79 @@ void Broadcasting(const unsigned char* packet)
 		curr = pred->GetNextWithMark(&marked);
 		if (marked) continue;
 
-		result = gClientInfoSet->Contains(curr->data.id);
+		result = gClientInfoSet->Contains(curr->id);
 		if (result) {
 			if (curr->data.isConnect)
-				SendPacket(curr->data.id, packet);
+				SendPacket(curr->id, packet);
 			pred = curr;
 		}
 	}
+	return;
+}
+
+void BroadcastingExceptIndex_With_UpdateRoomInfo(const int index)
+{
+	bool result = false, marked = false;
+	ClientNode *pred, *curr;
+	ClientNode *tail = gClientInfoSet->GetTail();
+	pred = gClientInfoSet->GetHead();
+	curr = pred;
+	while (curr->GetNext() != tail)
+	{
+		curr = pred->GetNextWithMark(&marked);
+		if (marked) continue;
+
+		result = gClientInfoSet->Contains(curr->id);
+		if (result) {
+			if (curr->data.isConnect && curr->id != index && curr->data.player.roomNo == 0)
+				UpdateRoomInfo(curr->id);
+			pred = curr;
+		}
+	}
+	return;
+}
+
+void UpdateRoomInfo(const unsigned int id)
+{
+	Packet::Notify notifyPacket;
+	notifyPacket.size = sizeof(Packet::Notify);
+	notifyPacket.type = (BYTE)PacketType::Notify;
+	// id는 별로 의미 없음. SERVER에서 보내주는 것이기 때문
+	notifyPacket.id = NIL;
+	notifyPacket.notice = Notice::UPDATE_ROOM;
+	SendPacket(id, reinterpret_cast<unsigned char*>(&notifyPacket));
+	Sleep(10);
+
+	bool result = false, marked = false;
+	RoomNode *pred, *curr;
+	RoomNode *tail = gRoomInfoSet->GetTail();
+	pred = gRoomInfoSet->GetHead();
+	curr = pred;
+
+	Packet::CreateRoom createRoomPacket;
+	createRoomPacket.size = sizeof(Packet::CreateRoom);
+	createRoomPacket.type = (BYTE)PacketType::CreateRoom;
+	while (curr->GetNext() != tail)
+	{
+		curr = pred->GetNextWithMark(&marked);
+		if (marked) continue;
+
+		result = gRoomInfoSet->Contains(curr->id);
+		if (result) {
+			createRoomPacket.roomNo = curr->data.no;
+			createRoomPacket.chiefNo = curr->data.chiefID;
+			createRoomPacket.partner_1_ID = curr->data.partner_1_ID;
+			createRoomPacket.partner_2_ID = curr->data.partner_2_ID;
+			createRoomPacket.partner_3_ID = curr->data.partner_3_ID;
+
+			SendPacket(id, reinterpret_cast<unsigned char*>(&createRoomPacket));
+			
+			// SendPacket을 원활히 처리하기 위한 delay
+			Sleep(10);
+			//std::cout << "Update Room Info : Send class #" << createRoomPacket.roomNo << " data to."<< id << std::endl;
+			pred = curr;
+		}
+	}
+
 	return;
 }

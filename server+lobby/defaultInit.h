@@ -12,8 +12,15 @@
 #include "stdafx.h"
 #include "protocol.h"
 
-#define NIL						-999	// 내가 정한 NULL이 아닌 default 값
+#define NIL						-9999	// 내가 정한 NULL이 아닌 default 값
 #define NUM_OF_MONSTER_PATH		4
+
+#define MAX_INT 0x80000000
+#define MIN_INT 0x7FFFFFFF
+
+#define DEFAULT_POS_X 247.92f;
+#define DEFAULT_POS_Y -4.29f;
+#define DEFAULT_POS_Z -1.23f;
 
 struct Vector3
 {
@@ -32,7 +39,20 @@ struct Quaternian
 
 struct Player
 {
+	int roomNo;
 	Vector3	pos;
+};
+
+struct RoomInfo
+{
+	int no;
+	int chiefID;
+	int partner_1_ID;
+	int partner_2_ID;
+	int partner_3_ID;
+	bool partner_1_ready;
+	bool partner_2_ready;
+	bool partner_3_ready;
 };
 
 struct OverlapEx
@@ -46,7 +66,6 @@ struct OverlapEx
 
 struct Client
 {
-	int				id;
 	bool			isConnect;
 	SOCKET			socket;
 	Player			player;
@@ -54,13 +73,3 @@ struct Client
 	unsigned char	packetBuf[MAX_BUFF_SIZE];	// Recv되는 패킷이 조립되는 Buffer / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 	int				previousDataSize;			// 이전의 받은 양을 저장하는 변수 / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 };
-
-struct Monster
-{
-	Vector3 pos;
-	Vector3 patrolPos;
-};
-
-extern Monster gMonster;
-extern std::mutex gLock;
-extern Vector3 monsterPath[NUM_OF_MONSTER_PATH];

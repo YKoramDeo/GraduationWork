@@ -27,7 +27,17 @@ enum PacketType
 	Notify,
 	CreateRoom,
 	JoinRoom,
-	RenewalRoomInfo
+	RenewalRoomInfo,
+	/**********************변 경 사 항**********************/
+	Connect,
+	PlayerMove,
+	PlayerLight,
+	PlayerShout,
+	PlayerGetItem,
+	MonsterSetInfo,
+	MonsterMove,
+	MonsterSetPatrolPos
+	/**********************변 경 사 항**********************/
 };
 
 enum Notice
@@ -98,6 +108,97 @@ namespace Packet
 		int partner_3_ID;
 		bool partner_3_ready;
 	};
+
+	/**********************변 경 사 항**********************/
+	struct Connect
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		float posX;
+		float posY;
+		float posZ;
+	};
+
+	struct PlayerMove
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		float posX;
+		float posY;
+		float posZ;
+
+		float dirX;
+		float dirY;
+		float dirZ;
+
+		float horizental;
+		float vertical;
+		bool sneak;
+	};
+
+	struct PlayerLight
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		bool on;
+		float rotX;
+		float rotY;
+		float rotZ;
+		float rotW;
+	};
+
+	struct PlayerShout
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		bool shouting;
+		float posX;
+		float posY;
+		float posZ;
+	};
+
+	struct PlayerGetItem
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		int itemID;
+	};
+
+	struct MonsterSetInfo
+	{
+		BYTE size;
+		BYTE type;
+		float posX;
+		float posY;
+		float posZ;
+		float patrolPosX;
+		float patrolPosY;
+		float patrolPosZ;
+	};
+
+	struct MonsterMove
+	{
+		BYTE size;
+		BYTE type;
+		float posX;
+		float posY;
+		float posZ;
+	};
+
+	struct MonsterSetPatrolPos
+	{
+		BYTE size;
+		BYTE type;
+		float posX;
+		float posY;
+		float posZ;
+	};
+	/**********************변 경 사 항**********************/
 }
 #pragma pack(pop)
 

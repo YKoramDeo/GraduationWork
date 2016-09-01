@@ -3,27 +3,19 @@
 #include "defaultInit.h"
 #include "iocpNetwork.h"
 #include "processRoutine.h"
-#include "lock-free-SET_RoomInfo.h"
 #include "tbb_hash_map.h"
 
 bool gShutdown = false;
 HANDLE ghIOCP;
 
-RoomList *gRoomInfoSet;
-RoomNode *gRoomInfo_DelList = nullptr;
-std::mutex gRoomInfo_DelList_Lock;
-
 TBB_HASH_MAP<Client> gClientInfoMAP;
+TBB_HASH_MAP<RoomInfo> gRoomInfoMAP;
 
 int main(int argc, char *argv[])
 {
 	std::vector<std::thread*> workerThreads;
 	std::thread acceptThread;
 
-	gRoomInfoSet = new RoomList();
-	gRoomInfo_DelList = new RoomNode(MIN_INT);
-
-	gRoomInfoSet->Initialize();
 	InitializeServer();
 
 	acceptThread = std::thread(AcceptThreadFunc);
@@ -43,17 +35,7 @@ int main(int argc, char *argv[])
 
 	StopServer();
 	gClientInfoMAP.Clear();
-
-	gRoomInfoSet->Rearrangement();
-	while (0 != gRoomInfo_DelList->next)
-	{
-		RoomNode *temp = gRoomInfo_DelList;
-		gRoomInfo_DelList = gRoomInfo_DelList->GetNext();
-		delete temp;
-	}
-
-	delete gRoomInfo_DelList;
-	delete gRoomInfoSet;
+	gRoomInfoMAP.Clear();
 
 	return 0;
 }

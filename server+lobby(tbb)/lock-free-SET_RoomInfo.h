@@ -322,5 +322,3 @@ private:
 		return;
 	}
 };
-
-extern RoomList *gRoomInfoSet;

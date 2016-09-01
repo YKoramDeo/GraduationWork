@@ -65,14 +65,30 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 		break;
 	case Notice::MAKE_ROOM:
 		{
-			RoomInfo roomInfo;
-			roomInfo.no = gRoomInfoSet->GetIndex() + 1;
-			roomInfo.chiefID = id;
-			gRoomInfoSet->Add(roomInfo.no, roomInfo);
+			bool makeRoom = false;
+			int roomNo = NIL;
+
+			while (!makeRoom)
+			{
+				roomNo = gRoomInfoMAP.Size() + 1;
+				if (gRoomInfoMAP.Insert(roomNo))
+				{
+					gRoomInfoMAP.GetData(roomNo)->no = roomNo;
+					gRoomInfoMAP.GetData(roomNo)->chiefID = id;
+					gRoomInfoMAP.GetData(roomNo)->partner_1_ID = NIL;
+					gRoomInfoMAP.GetData(roomNo)->partner_2_ID = NIL;
+					gRoomInfoMAP.GetData(roomNo)->partner_3_ID = NIL;
+					gRoomInfoMAP.GetData(roomNo)->partner_1_ready = false;
+					gRoomInfoMAP.GetData(roomNo)->partner_2_ready = false;
+					gRoomInfoMAP.GetData(roomNo)->partner_3_ready = false;
+
+					makeRoom = true;
+				}
+			}
 
 			// 새로 들어온 client의 현재 있는 Room의 번호를 현재 들어온 번호로 update를 시행한다.
 			if (gClientInfoMAP.Contains(id)) {
-				gClientInfoMAP.GetData(id)->player.roomNo = roomInfo.no;
+				gClientInfoMAP.GetData(id)->player.roomNo = roomNo;
 
 				std::cout << "Recv Notice Packet : MAKE_ROOM : Class No. of " << key << " is " << gClientInfoMAP.GetData(id)->player.roomNo << std::endl;
 			}
@@ -85,75 +101,74 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 			int roomNo = 0;
 			if (gClientInfoMAP.Contains(id)) roomNo = gClientInfoMAP.GetData(id)->player.roomNo;
 			
-			RoomInfo *roomData_ptr = nullptr;
-			if (gRoomInfoSet->Search(roomNo, &roomData_ptr))
+			if (gRoomInfoMAP.Contains(roomNo))
 			{
 				// 나가고자 하는 client가 방장일 때
-				if (id == roomData_ptr->chiefID)
+				if (id == gRoomInfoMAP.GetData(roomNo)->chiefID)
 				{
-					if (roomData_ptr->partner_1_ID != NIL)
+					if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL)
 					{
-						roomData_ptr->chiefID = roomData_ptr->partner_1_ID;
-						roomData_ptr->partner_1_ID = NIL;
-						roomData_ptr->partner_1_ready = false;
+						gRoomInfoMAP.GetData(roomNo)->chiefID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+						gRoomInfoMAP.GetData(roomNo)->partner_1_ID = NIL;
+						gRoomInfoMAP.GetData(roomNo)->partner_1_ready = false;
 
 						Packet::RenewalRoomInfo renewalRoomInfoPacket;
 						renewalRoomInfoPacket.size = sizeof(Packet::RenewalRoomInfo);
 						renewalRoomInfoPacket.type = PacketType::RenewalRoomInfo;
-						renewalRoomInfoPacket.roomNo = roomData_ptr->no;
-						renewalRoomInfoPacket.chiefNo = roomData_ptr->chiefID;
-						renewalRoomInfoPacket.partner_1_ID = roomData_ptr->partner_1_ID;
-						renewalRoomInfoPacket.partner_2_ID = roomData_ptr->partner_2_ID;
-						renewalRoomInfoPacket.partner_3_ID = roomData_ptr->partner_3_ID;
-						renewalRoomInfoPacket.partner_1_ready = roomData_ptr->partner_1_ready;
-						renewalRoomInfoPacket.partner_2_ready = roomData_ptr->partner_2_ready;
-						renewalRoomInfoPacket.partner_3_ready = roomData_ptr->partner_3_ready;
+						renewalRoomInfoPacket.roomNo = gRoomInfoMAP.GetData(roomNo)->no;
+						renewalRoomInfoPacket.chiefNo = gRoomInfoMAP.GetData(roomNo)->chiefID;
+						renewalRoomInfoPacket.partner_1_ID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+						renewalRoomInfoPacket.partner_2_ID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+						renewalRoomInfoPacket.partner_3_ID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+						renewalRoomInfoPacket.partner_1_ready = gRoomInfoMAP.GetData(roomNo)->partner_1_ready;
+						renewalRoomInfoPacket.partner_2_ready = gRoomInfoMAP.GetData(roomNo)->partner_2_ready;
+						renewalRoomInfoPacket.partner_3_ready = gRoomInfoMAP.GetData(roomNo)->partner_3_ready;
 
 						SendPacket(renewalRoomInfoPacket.chiefNo, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_1_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_2_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_2_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_3_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_3_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 					}
-					else if (roomData_ptr->partner_2_ID != NIL)
+					else if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL)
 					{
-						roomData_ptr->chiefID = roomData_ptr->partner_2_ID;
-						roomData_ptr->partner_2_ID = NIL;
-						roomData_ptr->partner_2_ready = false;
+						gRoomInfoMAP.GetData(roomNo)->chiefID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+						gRoomInfoMAP.GetData(roomNo)->partner_2_ID = NIL;
+						gRoomInfoMAP.GetData(roomNo)->partner_2_ready = false;
 
 						Packet::RenewalRoomInfo renewalRoomInfoPacket;
 						renewalRoomInfoPacket.size = sizeof(Packet::RenewalRoomInfo);
 						renewalRoomInfoPacket.type = PacketType::RenewalRoomInfo;
-						renewalRoomInfoPacket.roomNo = roomData_ptr->no;
-						renewalRoomInfoPacket.chiefNo = roomData_ptr->chiefID;
-						renewalRoomInfoPacket.partner_1_ID = roomData_ptr->partner_1_ID;
-						renewalRoomInfoPacket.partner_2_ID = roomData_ptr->partner_2_ID;
-						renewalRoomInfoPacket.partner_3_ID = roomData_ptr->partner_3_ID;
-						renewalRoomInfoPacket.partner_1_ready = roomData_ptr->partner_1_ready;
-						renewalRoomInfoPacket.partner_2_ready = roomData_ptr->partner_2_ready;
-						renewalRoomInfoPacket.partner_3_ready = roomData_ptr->partner_3_ready;
+						renewalRoomInfoPacket.roomNo = gRoomInfoMAP.GetData(roomNo)->no;
+						renewalRoomInfoPacket.chiefNo = gRoomInfoMAP.GetData(roomNo)->chiefID;
+						renewalRoomInfoPacket.partner_1_ID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+						renewalRoomInfoPacket.partner_2_ID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+						renewalRoomInfoPacket.partner_3_ID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+						renewalRoomInfoPacket.partner_1_ready = gRoomInfoMAP.GetData(roomNo)->partner_1_ready;
+						renewalRoomInfoPacket.partner_2_ready = gRoomInfoMAP.GetData(roomNo)->partner_2_ready;
+						renewalRoomInfoPacket.partner_3_ready = gRoomInfoMAP.GetData(roomNo)->partner_3_ready;
 
 						SendPacket(renewalRoomInfoPacket.chiefNo, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_1_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_2_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_2_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_3_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_3_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 					}
-					else if (roomData_ptr->partner_3_ID != NIL)
+					else if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL)
 					{
-						roomData_ptr->chiefID = roomData_ptr->partner_3_ID;
-						roomData_ptr->partner_3_ID = NIL;
-						roomData_ptr->partner_3_ready = false;
+						gRoomInfoMAP.GetData(roomNo)->chiefID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+						gRoomInfoMAP.GetData(roomNo)->partner_3_ID = NIL;
+						gRoomInfoMAP.GetData(roomNo)->partner_3_ready = false;
 
 						Packet::RenewalRoomInfo renewalRoomInfoPacket;
 						renewalRoomInfoPacket.size = sizeof(Packet::RenewalRoomInfo);
 						renewalRoomInfoPacket.type = PacketType::RenewalRoomInfo;
-						renewalRoomInfoPacket.roomNo = roomData_ptr->no;
-						renewalRoomInfoPacket.chiefNo = roomData_ptr->chiefID;
-						renewalRoomInfoPacket.partner_1_ID = roomData_ptr->partner_1_ID;
-						renewalRoomInfoPacket.partner_2_ID = roomData_ptr->partner_2_ID;
-						renewalRoomInfoPacket.partner_3_ID = roomData_ptr->partner_3_ID;
-						renewalRoomInfoPacket.partner_1_ready = roomData_ptr->partner_1_ready;
-						renewalRoomInfoPacket.partner_2_ready = roomData_ptr->partner_2_ready;
-						renewalRoomInfoPacket.partner_3_ready = roomData_ptr->partner_3_ready;
+						renewalRoomInfoPacket.roomNo = gRoomInfoMAP.GetData(roomNo)->no;
+						renewalRoomInfoPacket.chiefNo = gRoomInfoMAP.GetData(roomNo)->chiefID;
+						renewalRoomInfoPacket.partner_1_ID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+						renewalRoomInfoPacket.partner_2_ID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+						renewalRoomInfoPacket.partner_3_ID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+						renewalRoomInfoPacket.partner_1_ready = gRoomInfoMAP.GetData(roomNo)->partner_1_ready;
+						renewalRoomInfoPacket.partner_2_ready = gRoomInfoMAP.GetData(roomNo)->partner_2_ready;
+						renewalRoomInfoPacket.partner_3_ready = gRoomInfoMAP.GetData(roomNo)->partner_3_ready;
 
 						SendPacket(renewalRoomInfoPacket.chiefNo, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 						if (renewalRoomInfoPacket.partner_1_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
@@ -161,38 +176,37 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 						if (renewalRoomInfoPacket.partner_3_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_3_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 					}
 					else {
-						gRoomInfoSet->Remove(roomNo);
+						gRoomInfoMAP.Remove(roomNo);
 						BroadcastingExceptIndex_With_UpdateRoomInfo(key);
-						gRoomInfoSet->CheckElement();
 					}
 				}
 				// 나가고자 하는 client가 방장이 아닐 때
 				else
 				{
-					if (id == roomData_ptr->partner_1_ID) {
-						roomData_ptr->partner_1_ID = NIL;
-						roomData_ptr->partner_1_ready = false;
+					if (id == gRoomInfoMAP.GetData(roomNo)->partner_1_ID) {
+						gRoomInfoMAP.GetData(roomNo)->partner_1_ID = NIL;
+						gRoomInfoMAP.GetData(roomNo)->partner_1_ready = false;
 					}
-					else if (id == roomData_ptr->partner_2_ID) {
-						roomData_ptr->partner_2_ID = NIL;
-						roomData_ptr->partner_2_ready = false;
+					else if (id == gRoomInfoMAP.GetData(roomNo)->partner_2_ID) {
+						gRoomInfoMAP.GetData(roomNo)->partner_2_ID = NIL;
+						gRoomInfoMAP.GetData(roomNo)->partner_2_ready = false;
 					}
 					else {
-						roomData_ptr->partner_3_ID = NIL;
-						roomData_ptr->partner_3_ready = false;
+						gRoomInfoMAP.GetData(roomNo)->partner_3_ID = NIL;
+						gRoomInfoMAP.GetData(roomNo)->partner_3_ready = false;
 					}
 
 					Packet::RenewalRoomInfo renewalRoomInfoPacket;
 					renewalRoomInfoPacket.size = sizeof(Packet::RenewalRoomInfo);
 					renewalRoomInfoPacket.type = PacketType::RenewalRoomInfo;
-					renewalRoomInfoPacket.roomNo = roomData_ptr->no;
-					renewalRoomInfoPacket.chiefNo = roomData_ptr->chiefID;
-					renewalRoomInfoPacket.partner_1_ID = roomData_ptr->partner_1_ID;
-					renewalRoomInfoPacket.partner_2_ID = roomData_ptr->partner_2_ID;
-					renewalRoomInfoPacket.partner_3_ID = roomData_ptr->partner_3_ID;
-					renewalRoomInfoPacket.partner_1_ready = roomData_ptr->partner_1_ready;
-					renewalRoomInfoPacket.partner_2_ready = roomData_ptr->partner_2_ready;
-					renewalRoomInfoPacket.partner_3_ready = roomData_ptr->partner_3_ready;
+					renewalRoomInfoPacket.roomNo = gRoomInfoMAP.GetData(roomNo)->no;
+					renewalRoomInfoPacket.chiefNo = gRoomInfoMAP.GetData(roomNo)->chiefID;
+					renewalRoomInfoPacket.partner_1_ID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+					renewalRoomInfoPacket.partner_2_ID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+					renewalRoomInfoPacket.partner_3_ID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+					renewalRoomInfoPacket.partner_1_ready = gRoomInfoMAP.GetData(roomNo)->partner_1_ready;
+					renewalRoomInfoPacket.partner_2_ready = gRoomInfoMAP.GetData(roomNo)->partner_2_ready;
+					renewalRoomInfoPacket.partner_3_ready = gRoomInfoMAP.GetData(roomNo)->partner_3_ready;
 
 					SendPacket(renewalRoomInfoPacket.chiefNo, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 					if (renewalRoomInfoPacket.partner_1_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
@@ -218,28 +232,27 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 			int roomNo = 0;
 			if (gClientInfoMAP.Contains(id)) roomNo = gClientInfoMAP.GetData(id)->player.roomNo;
 
-			RoomInfo *roomData_ptr = nullptr;
-			if (gRoomInfoSet->Search(roomNo, &roomData_ptr))
+			if (gRoomInfoMAP.Contains(roomNo))
 			{
-				if (id != roomData_ptr->chiefID) {
-					if (id == roomData_ptr->partner_1_ID)
-						roomData_ptr->partner_1_ready = (notice == Notice::GAME_READY) ? true : false;
-					else if (id == roomData_ptr->partner_2_ID)
-						roomData_ptr->partner_2_ready = (notice == Notice::GAME_READY) ? true : false;
+				if (id != gRoomInfoMAP.GetData(roomNo)->chiefID) {
+					if (id == gRoomInfoMAP.GetData(roomNo)->partner_1_ID)
+						gRoomInfoMAP.GetData(roomNo)->partner_1_ready = (notice == Notice::GAME_READY) ? true : false;
+					else if (id == gRoomInfoMAP.GetData(roomNo)->partner_2_ID)
+						gRoomInfoMAP.GetData(roomNo)->partner_2_ready = (notice == Notice::GAME_READY) ? true : false;
 					else 
-						roomData_ptr->partner_3_ready = (notice == Notice::GAME_READY) ? true : false;
+						gRoomInfoMAP.GetData(roomNo)->partner_3_ready = (notice == Notice::GAME_READY) ? true : false;
 
 					Packet::RenewalRoomInfo renewalRoomInfoPacket;
 					renewalRoomInfoPacket.size = sizeof(Packet::RenewalRoomInfo);
 					renewalRoomInfoPacket.type = PacketType::RenewalRoomInfo;
-					renewalRoomInfoPacket.roomNo = roomData_ptr->no;
-					renewalRoomInfoPacket.chiefNo = roomData_ptr->chiefID;
-					renewalRoomInfoPacket.partner_1_ID = roomData_ptr->partner_1_ID;
-					renewalRoomInfoPacket.partner_2_ID = roomData_ptr->partner_2_ID;
-					renewalRoomInfoPacket.partner_3_ID = roomData_ptr->partner_3_ID;
-					renewalRoomInfoPacket.partner_1_ready = roomData_ptr->partner_1_ready;
-					renewalRoomInfoPacket.partner_2_ready = roomData_ptr->partner_2_ready;
-					renewalRoomInfoPacket.partner_3_ready = roomData_ptr->partner_3_ready;
+					renewalRoomInfoPacket.roomNo = gRoomInfoMAP.GetData(roomNo)->no;
+					renewalRoomInfoPacket.chiefNo = gRoomInfoMAP.GetData(roomNo)->chiefID;
+					renewalRoomInfoPacket.partner_1_ID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+					renewalRoomInfoPacket.partner_2_ID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+					renewalRoomInfoPacket.partner_3_ID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+					renewalRoomInfoPacket.partner_1_ready = gRoomInfoMAP.GetData(roomNo)->partner_1_ready;
+					renewalRoomInfoPacket.partner_2_ready = gRoomInfoMAP.GetData(roomNo)->partner_2_ready;
+					renewalRoomInfoPacket.partner_3_ready = gRoomInfoMAP.GetData(roomNo)->partner_3_ready;
 
 					SendPacket(renewalRoomInfoPacket.chiefNo, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 					if (renewalRoomInfoPacket.partner_1_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
@@ -256,13 +269,12 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 					gameStartPacket.id = NIL;
 					gameStartPacket.notice = Notice::GAME_START;
 
-					RoomInfo *roomData_ptr = nullptr;
-					if (gRoomInfoSet->Search(roomNo, &roomData_ptr))
+					if (gRoomInfoMAP.Contains(roomNo))
 					{
-						SendPacket(roomData_ptr->chiefID, reinterpret_cast<unsigned char*>(&gameStartPacket));
-						if (roomData_ptr->partner_1_ID != NIL) SendPacket(roomData_ptr->partner_1_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
-						if (roomData_ptr->partner_2_ID != NIL) SendPacket(roomData_ptr->partner_2_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
-						if (roomData_ptr->partner_3_ID != NIL) SendPacket(roomData_ptr->partner_3_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
+						SendPacket(gRoomInfoMAP.GetData(roomNo)->chiefID, reinterpret_cast<unsigned char*>(&gameStartPacket));
+						if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_1_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
+						if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_2_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
+						if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_3_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
 					}
 				}
 			}
@@ -284,28 +296,40 @@ void OnReceivePacket::JoinRoom(int key, unsigned char* packet)
 
 	gClientInfoMAP.GetData(id)->player.roomNo = roomNo;
 
-	bool ret = gRoomInfoSet->JoinClient(roomNo, id);
+	bool ret = false;
+
+	if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID == NIL) {
+		gRoomInfoMAP.GetData(roomNo)->partner_1_ID = id;
+		ret = true;
+	}
+	else if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID == NIL) {
+		gRoomInfoMAP.GetData(roomNo)->partner_2_ID = id;
+		ret = true;
+	}
+	else if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID == NIL) {
+		gRoomInfoMAP.GetData(roomNo)->partner_3_ID = id;
+		ret = true;
+	}
+	else
+		ret = false;
 
 	if (ret) {
-		RoomInfo *roomData = nullptr;
-		gRoomInfoSet->Search(roomNo, &roomData);
-
 		Packet::RenewalRoomInfo renewalRoomInfoPacket;
 		renewalRoomInfoPacket.size = sizeof(Packet::RenewalRoomInfo);
 		renewalRoomInfoPacket.type = (BYTE)PacketType::RenewalRoomInfo;
-		renewalRoomInfoPacket.roomNo = roomData->no;
-		renewalRoomInfoPacket.chiefNo = roomData->chiefID;
-		renewalRoomInfoPacket.partner_1_ID = roomData->partner_1_ID;
-		renewalRoomInfoPacket.partner_2_ID = roomData->partner_2_ID;
-		renewalRoomInfoPacket.partner_3_ID = roomData->partner_3_ID;
-		renewalRoomInfoPacket.partner_1_ready = roomData->partner_1_ready;
-		renewalRoomInfoPacket.partner_2_ready = roomData->partner_2_ready;
-		renewalRoomInfoPacket.partner_3_ready = roomData->partner_3_ready;
+		renewalRoomInfoPacket.roomNo = gRoomInfoMAP.GetData(roomNo)->no;
+		renewalRoomInfoPacket.chiefNo = gRoomInfoMAP.GetData(roomNo)->chiefID;
+		renewalRoomInfoPacket.partner_1_ID = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+		renewalRoomInfoPacket.partner_2_ID = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+		renewalRoomInfoPacket.partner_3_ID = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+		renewalRoomInfoPacket.partner_1_ready = gRoomInfoMAP.GetData(roomNo)->partner_1_ready;
+		renewalRoomInfoPacket.partner_2_ready = gRoomInfoMAP.GetData(roomNo)->partner_2_ready;
+		renewalRoomInfoPacket.partner_3_ready = gRoomInfoMAP.GetData(roomNo)->partner_3_ready;
 		
-		SendPacket(roomData->chiefID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
-		if (roomData->partner_1_ID != NIL) SendPacket(roomData->partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
-		if (roomData->partner_2_ID != NIL) SendPacket(roomData->partner_2_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
-		if (roomData->partner_3_ID != NIL) SendPacket(roomData->partner_3_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
+		SendPacket(gRoomInfoMAP.GetData(roomNo)->chiefID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
+		if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_1_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
+		if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_2_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
+		if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_3_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 
 		BroadcastingExceptIndex_With_UpdateRoomInfo(key);
 

@@ -49,3 +49,4 @@ public:
 };
 
 extern TBB_HASH_MAP<Client> gClientInfoMAP;
+extern TBB_HASH_MAP<RoomInfo> gRoomInfoMAP;

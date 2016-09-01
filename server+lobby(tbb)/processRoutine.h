@@ -11,7 +11,6 @@
 #include "stdafx.h"
 #include "protocol.h"
 #include "iocpNetwork.h"
-#include "lock-free-SET_RoomInfo.h"
 
 bool BeCompeletedSendPacket(BYTE, BYTE);
 void ProcessPacket(int, unsigned char*);

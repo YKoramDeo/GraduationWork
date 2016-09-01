@@ -11,7 +11,6 @@
 
 #include "protocol.h"
 #include "defaultInit.h"
-#include "lock-free-SET_RoomInfo.h"
 #include "tbb_hash_map.h"
 
 /*

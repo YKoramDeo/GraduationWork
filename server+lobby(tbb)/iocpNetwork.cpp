@@ -393,34 +393,23 @@ void UpdateRoomInfo(const unsigned int id)
 
 	Sleep(10);
 
-	bool result = false, marked = false;
-	RoomNode *pred, *curr;
-	RoomNode *tail = gRoomInfoSet->GetTail();
-	pred = gRoomInfoSet->GetHead();
-	curr = pred;
-
 	Packet::CreateRoom createRoomPacket;
 	createRoomPacket.size = sizeof(Packet::CreateRoom);
 	createRoomPacket.type = (BYTE)PacketType::CreateRoom;
-	while (curr->GetNext() != tail)
-	{
-		curr = pred->GetNextWithMark(&marked);
-		if (marked) continue;
 
-		result = gRoomInfoSet->Contains(curr->id);
-		if (result) {
-			createRoomPacket.roomNo = curr->data.no;
-			createRoomPacket.chiefNo = curr->data.chiefID;
-			createRoomPacket.partner_1_ID = curr->data.partner_1_ID;
-			createRoomPacket.partner_2_ID = curr->data.partner_2_ID;
-			createRoomPacket.partner_3_ID = curr->data.partner_3_ID;
+	for (tbb::concurrent_hash_map<int, RoomInfo>::iterator i = gRoomInfoMAP.m_map.begin(); i != gRoomInfoMAP.m_map.end(); ++i)
+	{
+		int key = i->first;
+		if (gRoomInfoMAP.Contains(key))
+		{
+			createRoomPacket.roomNo = gRoomInfoMAP.GetData(key)->no;
+			createRoomPacket.chiefNo = gRoomInfoMAP.GetData(key)->chiefID;
+			createRoomPacket.partner_1_ID = gRoomInfoMAP.GetData(key)->partner_1_ID;
+			createRoomPacket.partner_2_ID = gRoomInfoMAP.GetData(key)->partner_2_ID;
+			createRoomPacket.partner_3_ID = gRoomInfoMAP.GetData(key)->partner_3_ID;
 
 			SendPacket(id, reinterpret_cast<unsigned char*>(&createRoomPacket));
-
-			// SendPacket을 원활히 처리하기 위한 delay
 			Sleep(10);
-			//std::cout << "Update Room Info : Send class #" << createRoomPacket.roomNo << " data to."<< id << std::endl;
-			pred = curr;
 		}
 	}
 

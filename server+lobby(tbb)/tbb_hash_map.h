@@ -44,14 +44,7 @@ public:
 			return nullptr;
 	}
 
-	tbb::concurrent_hash_map<int,T>::begin GetBegin() {
-		return this->m_map.begin();
-	}
-
-	tbb::concurrent_hash_map<int, T>::begin GetEnd() {
-		return this->m_map.end();
-	}
-private:
+public:
 	tbb::concurrent_hash_map<int, T> m_map;
 };
 

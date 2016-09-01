@@ -335,7 +335,7 @@ void SendPacket(const int index, const unsigned char* packet)
 
 void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 {
-	for (tbb::concurrent_hash_map<int, Client>::iterator i = gClientInfoMAP.GetBegin(); i != gClientInfoMAP.GetEnd(); ++i)
+	for (tbb::concurrent_hash_map<int, Client>::iterator i = gClientInfoMAP.m_map.begin(); i != gClientInfoMAP.m_map.end(); ++i)
 	{
 		int key = i->first;
 		if (gClientInfoMAP.Contains(key))
@@ -350,7 +350,7 @@ void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 
 void Broadcasting(const unsigned char* packet)
 {
-	for (tbb::concurrent_hash_map<int, Client>::iterator i = gClientInfoMAP.GetBegin(); i != gClientInfoMAP.GetEnd(); ++i)
+	for (tbb::concurrent_hash_map<int, Client>::iterator i = gClientInfoMAP.m_map.begin(); i != gClientInfoMAP.m_map.end(); ++i)
 	{
 		int key = i->first;
 		if (gClientInfoMAP.Contains(key))
@@ -364,7 +364,7 @@ void Broadcasting(const unsigned char* packet)
 
 void BroadcastingExceptIndex_With_UpdateRoomInfo(const int index)
 {
-	for (tbb::concurrent_hash_map<int, Client>::iterator i = gClientInfoMAP.GetBegin(); i != gClientInfoMAP.GetEnd(); ++i)
+	for (tbb::concurrent_hash_map<int, Client>::iterator i = gClientInfoMAP.m_map.begin(); i != gClientInfoMAP.m_map.end(); ++i)
 	{
 		int key = i->first;
 		if (gClientInfoMAP.Contains(key))

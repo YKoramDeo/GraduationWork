@@ -82,10 +82,9 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 		break;
 	case Notice::QUIT_ROOM:
 		{
-			Client* client_ptr = nullptr;
-			//gClientInfoSet->Search(id, &client_ptr);
-			int roomNo = client_ptr->player.roomNo;
-
+			int roomNo = 0;
+			if (gClientInfoMAP.Contains(id)) roomNo = gClientInfoMAP.GetData(id)->player.roomNo;
+			
 			RoomInfo *roomData_ptr = nullptr;
 			if (gRoomInfoSet->Search(roomNo, &roomData_ptr))
 			{
@@ -201,15 +200,10 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 					if (renewalRoomInfoPacket.partner_3_ID != NIL) SendPacket(renewalRoomInfoPacket.partner_3_ID, reinterpret_cast<unsigned char*>(&renewalRoomInfoPacket));
 				}
 
-				// 새로 들어온 client의 현재 있는 Room의 번호를 현재 들어온 번호로 update를 시행한다.
-				Player playerData;
-				playerData.roomNo = 0;
-				playerData.pos.x = DEFAULT_POS_X;
-				playerData.pos.y = DEFAULT_POS_Y;
-				playerData.pos.z = DEFAULT_POS_Z;
-				//gClientInfoSet->Update(id, playerData);
+				// 대기방으로 돌아간 것을 자료구조에서도 변경.
+				gClientInfoMAP.GetData(id)->player.roomNo = 0;
 
-				std::cout << "Recv Notice Packet : QUIT_ROOM : Class No. of " << key << " is " << client_ptr->player.roomNo << std::endl;
+				std::cout << "Recv Notice Packet : QUIT_ROOM : Class No. of " << key << " is " << gClientInfoMAP.GetData(id)->player.roomNo << std::endl;
 			}
 
 			// 대기방으로 나가게 되는 것으로 방의 목록을 다시 받는다.
@@ -221,9 +215,8 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 	case Notice::GAME_READY:
 	case Notice::CANCEL_READY:
 		{
-			Client* client_ptr = nullptr;
-			//gClientInfoSet->Search(id, &client_ptr);
-			int roomNo = client_ptr->player.roomNo;
+			int roomNo = 0;
+			if (gClientInfoMAP.Contains(id)) roomNo = gClientInfoMAP.GetData(id)->player.roomNo;
 
 			RoomInfo *roomData_ptr = nullptr;
 			if (gRoomInfoSet->Search(roomNo, &roomData_ptr))
@@ -263,10 +256,6 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 					gameStartPacket.id = NIL;
 					gameStartPacket.notice = Notice::GAME_START;
 
-					Client* client_ptr = nullptr;
-					//gClientInfoSet->Search(id, &client_ptr);
-					int roomNo = client_ptr->player.roomNo;
-
 					RoomInfo *roomData_ptr = nullptr;
 					if (gRoomInfoSet->Search(roomNo, &roomData_ptr))
 					{
@@ -293,9 +282,7 @@ void OnReceivePacket::JoinRoom(int key, unsigned char* packet)
 	int id = key;
 	int roomNo = data->roomNo;
 
-	Client *client_ptr = nullptr;
-	//if (gClientInfoSet->Search(id, &client_ptr))
-	//	client_ptr->player.roomNo = roomNo;
+	gClientInfoMAP.GetData(id)->player.roomNo = roomNo;
 
 	bool ret = gRoomInfoSet->JoinClient(roomNo, id);
 

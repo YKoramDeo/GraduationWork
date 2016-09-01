@@ -27,12 +27,8 @@ namespace OnReceivePacket
 	void PlayerShout(int, unsigned char*);
 	void PlayerGetItem(int, unsigned char*);
 	void MonsterMove(int, unsigned char*);
+	void MonsterAI(int, unsigned char*);
 }
 
-void InitializeMonster(void);
 void InitializeItem(void);
-void SendMonsterSetInfoPacket(const int);
-bool HasMonsterArrivedAtDestination(void);
-void SetMonsterNewPatrolPath(void);
-void SendMonsterSetPatrolPosPacket(void);
 /**********************변 경 사 항**********************/

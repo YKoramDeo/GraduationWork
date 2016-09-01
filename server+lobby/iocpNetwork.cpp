@@ -341,6 +341,11 @@ void SendPacket(const int index, const unsigned char* packet)
 
 void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 {
+	BYTE packetType = (BYTE)packet[1];
+	int id = NIL;
+	if (packetType == 6)
+		id = (int)packet[2];
+
 	bool result = false, marked = false;
 	ClientNode *pred, *curr;
 	ClientNode *tail = gClientInfoSet->GetTail();
@@ -353,8 +358,13 @@ void BroadcastingExceptIndex(const int index, const unsigned char* packet)
 
 		result = gClientInfoSet->Contains(curr->id);
 		if (result) {
-			if (curr->data.isConnect && curr->id != index)
+			if (curr->data.isConnect && curr->id != index) {
 				SendPacket(curr->id, packet);
+				if (packetType == 6)
+				{
+					std::cout << "Broadcasting " << packetType << " packet To " << curr->id << " Connect " << id << std::endl;
+				}
+			}
 			pred = curr;
 		}
 	}

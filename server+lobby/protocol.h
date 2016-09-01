@@ -28,16 +28,13 @@ enum PacketType
 	CreateRoom,
 	JoinRoom,
 	RenewalRoomInfo,
-	/**********************변 경 사 항**********************/
 	Connect,
 	PlayerMove,
 	PlayerLight,
 	PlayerShout,
 	PlayerGetItem,
-	MonsterSetInfo,
 	MonsterMove,
-	MonsterSetPatrolPos
-	/**********************변 경 사 항**********************/
+	MonsterAI
 };
 
 enum Notice
@@ -49,7 +46,8 @@ enum Notice
 	JOIN_FAIL,
 	GAME_READY,
 	CANCEL_READY,
-	GAME_START
+	GAME_START,
+	YOU_ARE_CHIEF
 };
 
 #pragma pack(push,1)
@@ -109,7 +107,6 @@ namespace Packet
 		bool partner_3_ready;
 	};
 
-	/**********************변 경 사 항**********************/
 	struct Connect
 	{
 		BYTE size;
@@ -169,36 +166,26 @@ namespace Packet
 		int itemID;
 	};
 
-	struct MonsterSetInfo
-	{
-		BYTE size;
-		BYTE type;
-		float posX;
-		float posY;
-		float posZ;
-		float patrolPosX;
-		float patrolPosY;
-		float patrolPosZ;
-	};
-
 	struct MonsterMove
 	{
+
 		BYTE size;
 		BYTE type;
+		int status;
 		float posX;
 		float posY;
 		float posZ;
 	};
 
-	struct MonsterSetPatrolPos
+	struct MonsterAI
 	{
 		BYTE size;
 		BYTE type;
-		float posX;
-		float posY;
-		float posZ;
+		int status;
+		float lastPosX;
+		float lastPosY;
+		float lastPosZ;
 	};
-	/**********************변 경 사 항**********************/
 }
 #pragma pack(pop)
 

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+	#include "stdafx.h"
 #include "protocol.h"
 #include "defaultInit.h"
 #include "iocpNetwork.h"
@@ -18,10 +18,7 @@ RoomNode *gRoomInfo_DelList = nullptr;
 std::mutex gRoomInfo_DelList_Lock;
 
 /**********************변 경 사 항**********************/
-Monster gMonster;
-Vector3 monsterPath[NUM_OF_MONSTER_PATH];
 int gItemArr[NUM_OF_ITEM];
-std::mutex gLock;
 /**********************변 경 사 항**********************/
 
 int main(int argc, char *argv[])
@@ -39,7 +36,6 @@ int main(int argc, char *argv[])
 	InitializeServer();
 
 	/**********************변 경 사 항**********************/
-	InitializeMonster();
 	InitializeItem();
 	/**********************변 경 사 항**********************/
 

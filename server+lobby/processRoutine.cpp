@@ -37,16 +37,12 @@ bool BeCompeletedSendPacket(BYTE type, BYTE size)
 		if (size != sizeof(Packet::PlayerGetItem))
 			return false;
 		break;
-	case PacketType::MonsterSetInfo:
-		if (size != sizeof(Packet::MonsterSetInfo))
-			return false;
-		break;
 	case PacketType::MonsterMove:
 		if (size != sizeof(Packet::MonsterMove))
 			return false;
 		break;
-	case PacketType::MonsterSetPatrolPos:
-		if (size != sizeof(Packet::MonsterSetPatrolPos))
+	case PacketType::MonsterAI:
+		if (size != sizeof(Packet::MonsterAI))
 			return false;
 		break;
 	/**********************변 경 사 항**********************/
@@ -77,7 +73,6 @@ void ProcessPacket(int key, unsigned char *packet)
 		// Connect 동기화 하는 Packet
 		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
 		OnReceivePacket::Connect(key, packet);
-		SendMonsterSetInfoPacket(key);
 		break;
 	case (BYTE)PacketType::PlayerMove:
 		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
@@ -98,6 +93,10 @@ void ProcessPacket(int key, unsigned char *packet)
 	case (BYTE)PacketType::MonsterMove:
 		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
 		OnReceivePacket::MonsterMove(key, packet);
+		break;
+	case (BYTE)PacketType::MonsterAI:
+		debugText = std::to_string(key) + " ProcessPacket::MonsterAI::Called!!";
+		OnReceivePacket::MonsterAI(key, packet);
 		break;
 	/**********************변 경 사 항**********************/
 	default:
@@ -131,6 +130,8 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 			roomInfo.no = gRoomInfoSet->GetIndex() + 1;
 			roomInfo.chiefID = id;
 			gRoomInfoSet->Add(roomInfo.no, roomInfo);
+			//gRoomInfoSet->CheckElement();
+			//std::cout << "room No." << roomInfo.no << ", cheif ID." << roomInfo.chiefID << std::endl;
 
 			// 새로 들어온 client의 현재 있는 Room의 번호를 현재 들어온 번호로 update를 시행한다.
 			Client* client_ptr = nullptr;
@@ -142,7 +143,7 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 			playerData.pos.z = DEFAULT_POS_Z;
 			gClientInfoSet->Update(id, playerData);
 
-			std::cout << "Recv Notice Packet : MAKE_ROOM : Class No. of " << key << " is " << client_ptr->player.roomNo << std::endl;
+			std::cout << "Recv Notice Packet : MAKE_ROOM : Class No." << client_ptr->player.roomNo << " by " << key << std::endl;
 
 			BroadcastingExceptIndex_With_UpdateRoomInfo(key);
 		}
@@ -341,10 +342,12 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 						if (roomData_ptr->partner_1_ID != NIL) SendPacket(roomData_ptr->partner_1_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
 						if (roomData_ptr->partner_2_ID != NIL) SendPacket(roomData_ptr->partner_2_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
 						if (roomData_ptr->partner_3_ID != NIL) SendPacket(roomData_ptr->partner_3_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
+
+						std::cout << "Send Notice Packet : Game Start Class."  << roomData_ptr->no << std::endl;
 					}
 				}
 			}
-			DisplayDebugText(debugText);
+			//DisplayDebugText(debugText);
 		}
 		break;
 	default:
@@ -413,6 +416,9 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 
 	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
 
+	debugText = "ProcessPacket :: OnReceive Connect Packet :: From." + std::to_string(key);
+	DisplayDebugText(debugText);
+
 	Client *clientData = nullptr;
 	gClientInfoSet->Search(data->id, &clientData);
 	
@@ -421,9 +427,23 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 	clientData->player.pos.z = data->posZ;
 
 	// 다른 클라이언트에게 새로운 클라이언트 알림
-	BroadcastingExceptIndex(data->id, packet);
+	//BroadcastingExceptIndex(data->id, packet);
 
+	// 방장일 경우 방장이라는 정보를 보내준다.
+	RoomInfo *roomData = nullptr;
+	gRoomInfoSet->Search(clientData->player.roomNo, &roomData);
+	if (roomData->chiefID == data->id)
+	{
+		Packet::Notify youAreChiefPacket;
+		youAreChiefPacket.size = sizeof(Packet::Notify);
+		youAreChiefPacket.type = (BYTE)PacketType::Notify;
+		youAreChiefPacket.id = NIL;
+		youAreChiefPacket.notice = Notice::YOU_ARE_CHIEF;
+		SendPacket(key, reinterpret_cast<unsigned char*>(&youAreChiefPacket));
+		Sleep(100);
+	}
 	// 새로 들어온 클라이언트에게 이미 들어와있던 플레이어 정보들을 넘김
+	
 	Packet::Connect preOtherPlayerPacket;
 	preOtherPlayerPacket.size = sizeof(Packet::Connect);
 	preOtherPlayerPacket.type = (BYTE)PacketType::Connect;
@@ -447,6 +467,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 				preOtherPlayerPacket.posY = curr->data.player.pos.y;
 				preOtherPlayerPacket.posZ = curr->data.player.pos.z;
 				SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
+				std::cout << "Send Previous "<< curr->id << " OtherPlayer Data To." << key << std::endl;
+				Sleep(10);
 			}
 			pred = curr;
 		}
@@ -459,6 +481,10 @@ void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 {
 	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
 	Player transmittedPlayerData;
+	Client *client_ptr = nullptr;
+	gClientInfoSet->Search(key, &client_ptr);
+
+	transmittedPlayerData.roomNo = client_ptr->player.roomNo;
 	transmittedPlayerData.pos.x = data->posX;
 	transmittedPlayerData.pos.y = data->posY;
 	transmittedPlayerData.pos.z = data->posZ;
@@ -468,35 +494,9 @@ void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
 	// 다른 클라이언트에게 새로운 클라이언트 알림
 
 	BroadcastingExceptIndex(key, packet);
-
-	// 새로 들어온 클라이언트에게 이미 들어와있던 플레이어 정보들을 넘김
-	Packet::Connect preOtherPlayerPacket;
-	preOtherPlayerPacket.size = sizeof(Packet::Connect);
-	preOtherPlayerPacket.type = (BYTE)PacketType::Connect;
-
-	bool result = false, marked = false;
-	ClientNode *pred, *curr;
-	ClientNode *tail = gClientInfoSet->GetTail();
-	pred = gClientInfoSet->GetHead();
-	curr = pred;
-	while (curr->GetNext() != tail)
-	{
-		curr = pred->GetNextWithMark(&marked);
-		if (marked) continue;
-
-		result = gClientInfoSet->Contains(curr->id);
-		if (result) {
-			if (curr->data.isConnect && curr->id != key)
-			{
-				preOtherPlayerPacket.id = curr->id;
-				preOtherPlayerPacket.posX = curr->data.player.pos.x;
-				preOtherPlayerPacket.posY = curr->data.player.pos.y;
-				preOtherPlayerPacket.posZ = curr->data.player.pos.z;
-				SendPacket(key, reinterpret_cast<unsigned char*>(&preOtherPlayerPacket));
-			}
-			pred = curr;
-		}
-	}
+	
+	//std::string debugText = "OnReceivePlayer PlayerMove Packet:: " + std::to_string(data->posX) + ", " + std::to_string(data->posY) + ", " + std::to_string(data->posZ) + " from." + std::to_string(data->id);
+	//DisplayDebugText(debugText);
 
 	return;
 }
@@ -531,60 +531,51 @@ void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 
 void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
 {
+	// 이 함수는 방장인 client에게만 받아서 처리하는 함수
 	bool retval = true;
 
 	Packet::MonsterMove *data = reinterpret_cast<Packet::MonsterMove*>(packet);
 
-	gLock.lock();
-	retval &= (abs(gMonster.pos.x - data->posX) < 2.0f) ? true : false;
-	retval &= (abs(gMonster.pos.y - data->posY) < 2.0f) ? true : false;
-	retval &= (abs(gMonster.pos.z - data->posZ) < 2.0f) ? true : false;
+	Client *clientData = nullptr;
+	gClientInfoSet->Search(key, &clientData);
 
-	// 변화가 작다면 그냥 종료합니다.
-	if (retval) {
-		gLock.unlock();
-		return;
-	}
+	RoomInfo *roomData = nullptr;
+	gRoomInfoSet->Search(clientData->player.roomNo, &roomData);
+	
+	if (roomData->partner_1_ID != NIL) SendPacket(roomData->partner_1_ID, packet);
+	if (roomData->partner_2_ID != NIL) SendPacket(roomData->partner_2_ID, packet);
+	if (roomData->partner_3_ID != NIL) SendPacket(roomData->partner_3_ID, packet);
 
-	// 변화가 크다면 그 내용을 저장합니다.
-	gMonster.pos.x = data->posX;
-	gMonster.pos.y = data->posY;
-	gMonster.pos.z = data->posZ;
+	std::string debugText = "OnReceiveMonsterMovePacket:: Send Monster Status : "
+		+ std::to_string(data->status)  + ", Pos (" + std::to_string(data->posX) + ", " + std::to_string(data->posY) +  ", " + std::to_string(data->posZ) + ")";
 
-	std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPos ("
-		+ std::to_string(gMonster.pos.x) + ", " + std::to_string(gMonster.pos.y) + ", " + std::to_string(gMonster.pos.z) + ")";
-	gLock.unlock();
 	//DisplayDebugText(debugText);
 
-
-	if (HasMonsterArrivedAtDestination())
-	{
-		SetMonsterNewPatrolPath();
-		/*
-		DisplayDebugText("True");
-		gLock.lock();
-		std::string debugText = "OnReceiveMonsterMovePacket::gMonsterPatrolPos ("
-		+ std::to_string(gMonster.patrolPos.x) + ", " + std::to_string(gMonster.patrolPos.y) + ", " + std::to_string(gMonster.patrolPos.z) + ")";
-		gLock.unlock();
-		DisplayDebugText(debugText);
-		*/
-		SendMonsterSetPatrolPosPacket();
-	}
 	return;
 }
 
-void InitializeMonster(void)
+void OnReceivePacket::MonsterAI(int key, unsigned char *packet)
 {
-	monsterPath[0] = { 160.0f,	0.0f,	30.0f };
-	monsterPath[1] = { 90.0f,	0.0f,	-60.0f };
-	monsterPath[2] = { 160.0f,	0.0f,	-80.0f };
-	monsterPath[3] = { 200.0f,	0.0f,	0.0f };
+	bool retval = true;
 
-	gLock.lock();
-	gMonster.pos = { 160, 0, -83 };
-	gLock.unlock();
+	Packet::MonsterAI *data = reinterpret_cast<Packet::MonsterAI*>(packet);
 
-	SetMonsterNewPatrolPath();
+	Client *clientData = nullptr;
+	gClientInfoSet->Search(key, &clientData);
+
+	RoomInfo *roomData = nullptr;
+	gRoomInfoSet->Search(clientData->player.roomNo, &roomData);
+
+	if (roomData->chiefID != key) SendPacket(roomData->chiefID, packet);
+	if (roomData->partner_1_ID != NIL && roomData->partner_1_ID != key) SendPacket(roomData->partner_1_ID, packet);
+	if (roomData->partner_2_ID != NIL && roomData->partner_2_ID != key) SendPacket(roomData->partner_2_ID, packet);
+	if (roomData->partner_3_ID != NIL && roomData->partner_3_ID != key) SendPacket(roomData->partner_3_ID, packet);
+
+	std::string debugText = "OnReceiveMonsterAIPacket:: Send Monster Status : "
+		+ std::to_string(data->status) + ", Last Pos (" + std::to_string(data->lastPosX) + ", " + std::to_string(data->lastPosY) + ", " + std::to_string(data->lastPosZ) + ")";
+
+	DisplayDebugText(debugText);
+
 	return;
 }
 
@@ -592,94 +583,6 @@ void InitializeItem(void)
 {
 	for (int count = 0; count < NUM_OF_ITEM; ++count)
 		gItemArr[count] = NIL;
-	return;
-}
-
-void SendMonsterSetInfoPacket(int key)
-{
-	// 새로 들어온 클라이언트에게 몬스터 정보 동기화
-	Packet::MonsterSetInfo monsterSetInfoPacket;
-	monsterSetInfoPacket.size = sizeof(Packet::MonsterSetInfo);
-	monsterSetInfoPacket.type = (BYTE)PacketType::MonsterSetInfo;
-	gLock.lock();
-	monsterSetInfoPacket.posX = gMonster.pos.x;
-	monsterSetInfoPacket.posY = gMonster.pos.y;
-	monsterSetInfoPacket.posZ = gMonster.pos.z;
-	monsterSetInfoPacket.patrolPosX = gMonster.patrolPos.x;
-	monsterSetInfoPacket.patrolPosY = gMonster.patrolPos.y;
-	monsterSetInfoPacket.patrolPosZ = gMonster.patrolPos.z;
-	gLock.unlock();
-
-	SendPacket(key, reinterpret_cast<unsigned char*>(&monsterSetInfoPacket));
-
-	std::string debugText = "";
-	gLock.lock();
-	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Pos("
-		+ std::to_string((int)gMonster.pos.x) + ", " + std::to_string((int)gMonster.pos.y) + ", " + std::to_string((int)gMonster.pos.z) + ")";
-	//DisplayDebugText(debugText);
-
-	debugText = "ProcessPacket		:: " + std::to_string(key) + " client <= gMonster Patrol Pos("
-		+ std::to_string((int)gMonster.patrolPos.x) + ", " + std::to_string((int)gMonster.patrolPos.y) + ", " + std::to_string((int)gMonster.patrolPos.z) + ")";
-	gLock.unlock();
-	//DisplayDebugText(debugText);
-
-	return;
-}
-
-bool HasMonsterArrivedAtDestination(void)
-{
-	bool ret = true;
-	gLock.lock();
-
-	ret &= (abs(gMonster.pos.x - gMonster.patrolPos.x) <= 3.0f) ? true : false;
-	ret &= (abs(gMonster.pos.y - gMonster.patrolPos.y) <= 3.0f) ? true : false;
-	ret &= (abs(gMonster.pos.z - gMonster.patrolPos.z) <= 3.0f) ? true : false;
-
-	gLock.unlock();
-
-	return ret;
-}
-
-void SetMonsterNewPatrolPath(void)
-{
-	// rand 함수 변경 필요
-	int randVal = 0;
-	bool done = false;
-
-	while (!done) {
-		bool same = true;
-		randVal = rand() % NUM_OF_MONSTER_PATH;
-		gLock.lock();
-		same &= (gMonster.patrolPos.x == monsterPath[randVal].x) ? true : false;
-		same &= (gMonster.patrolPos.y == monsterPath[randVal].y) ? true : false;
-		same &= (gMonster.patrolPos.z == monsterPath[randVal].z) ? true : false;
-		gLock.unlock();
-
-		if (!same)
-		{
-			gLock.lock();
-			gMonster.patrolPos = monsterPath[randVal];
-			gLock.unlock();
-
-			done = true;
-		}
-	}
-
-	return;
-}
-
-void SendMonsterSetPatrolPosPacket(void)
-{
-	Packet::MonsterSetPatrolPos packet;
-	packet.size = sizeof(Packet::MonsterSetPatrolPos);
-	packet.type = (BYTE)PacketType::MonsterSetPatrolPos;
-	gLock.lock();
-	packet.posX = gMonster.patrolPos.x;
-	packet.posY = gMonster.patrolPos.y;
-	packet.posZ = gMonster.patrolPos.z;
-	gLock.unlock();
-
-	Broadcasting(reinterpret_cast<unsigned char*>(&packet));
 	return;
 }
 /**********************변 경 사 항**********************/

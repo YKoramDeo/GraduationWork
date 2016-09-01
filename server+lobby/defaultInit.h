@@ -76,15 +76,5 @@ struct Client
 
 /**********************변 경 사 항**********************/
 #define NUM_OF_ITEM				6
-
-struct Monster
-{
-	Vector3 pos;
-	Vector3 patrolPos;
-};
-
-extern Monster gMonster;
-extern std::mutex gLock;
-extern Vector3 monsterPath[NUM_OF_MONSTER_PATH];
 extern int gItemArr[NUM_OF_ITEM];
 /**********************변 경 사 항**********************/

@@ -112,7 +112,7 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 	int notice = data->notice;
 
 	debugText = "ProcessPacket :: OnReceive Notify Packet :: Recv " + std::to_string(data->notice) + " from. " + std::to_string(data->id);
-	DisplayDebugText(debugText);
+	//DisplayDebugText(debugText);
 
 	switch (notice)
 	{
@@ -147,7 +147,8 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 			if (gClientInfoMAP.Contains(id)) {
 				gClientInfoMAP.GetData(id)->player.roomNo = roomNo;
 
-				std::cout << "Recv Notice Packet : MAKE_ROOM : Class No. of " << key << " is " << gClientInfoMAP.GetData(id)->player.roomNo << std::endl;
+				debugText = "Recv Notice Packet : MAKE_ROOM : Class No. of " + std::to_string(key) + " is " + std::to_string(gClientInfoMAP.GetData(id)->player.roomNo);
+				DisplayDebugText(debugText);
 			}
 
 			BroadcastingExceptIndex_With_UpdateRoomInfo(key);
@@ -274,7 +275,8 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 				// 대기방으로 돌아간 것을 자료구조에서도 변경.
 				gClientInfoMAP.GetData(id)->player.roomNo = 0;
 
-				std::cout << "Recv Notice Packet : QUIT_ROOM : Class No. of " << key << " is " << gClientInfoMAP.GetData(id)->player.roomNo << std::endl;
+				debugText = "Recv Notice Packet : QUIT_ROOM : Class No. of " + std::to_string(key) + " is " + std::to_string(gClientInfoMAP.GetData(id)->player.roomNo);
+				DisplayDebugText(debugText);
 			}
 
 			// 대기방으로 나가게 되는 것으로 방의 목록을 다시 받는다.
@@ -332,6 +334,9 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 						if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_1_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
 						if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_2_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
 						if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_3_ID, reinterpret_cast<unsigned char*>(&gameStartPacket));
+					
+						debugText = "Send Notice Packet : Game Start Class." + std::to_string(gRoomInfoMAP.GetData(roomNo)->no);
+						DisplayDebugText(debugText);
 					}
 				}
 			}
@@ -447,7 +452,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
 		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
 		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
-		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		debugText = "Send Previous " + std::to_string(otherPlayerPacket.id) + " OtherPlayer Data To." + std::to_string(key);
+		DisplayDebugText(debugText);
 		Sleep(10);
 	}
 	if (key != gRoomInfoMAP.GetData(roomNo)->partner_1_ID && gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL)
@@ -457,7 +463,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
 		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
 		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
-		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		debugText = "Send Previous " + std::to_string(otherPlayerPacket.id) + " OtherPlayer Data To." + std::to_string(key);
+		DisplayDebugText(debugText);
 		Sleep(10);
 	}
 	if (key != gRoomInfoMAP.GetData(roomNo)->partner_2_ID && gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL)
@@ -467,7 +474,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
 		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
 		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
-		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		debugText = "Send Previous " + std::to_string(otherPlayerPacket.id) + " OtherPlayer Data To." + std::to_string(key);
+		DisplayDebugText(debugText);
 		Sleep(10);
 	}
 	if (key != gRoomInfoMAP.GetData(roomNo)->partner_3_ID && gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL)
@@ -477,7 +485,8 @@ void OnReceivePacket::Connect(int key, unsigned char* packet)
 		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
 		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
 		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
-		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		debugText = "Send Previous " + std::to_string(otherPlayerPacket.id) + " OtherPlayer Data To." + std::to_string(key);
+		DisplayDebugText(debugText);
 		Sleep(10);
 	}
 

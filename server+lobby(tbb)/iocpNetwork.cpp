@@ -295,7 +295,6 @@ void AcceptThreadFunc(void)
 
 void SendPacket(const int index, const unsigned char* packet)
 {
-	std::cout << "Enter Send Packet!" << std::endl;
 	int retval = 0;
 	OverlapEx *sendOverlap = new OverlapEx;
 	memset(sendOverlap, 0, sizeof(OverlapEx));
@@ -380,7 +379,6 @@ void BroadcastingExceptIndex_With_UpdateRoomInfo(const int index)
 
 void UpdateRoomInfo(const unsigned int id)
 {
-	std::cout << "Enter Update Room Info" << std::endl;
 	Packet::Notify notifyPacket;
 	notifyPacket.size = sizeof(Packet::Notify);
 	notifyPacket.type = (BYTE)PacketType::Notify;
@@ -388,8 +386,6 @@ void UpdateRoomInfo(const unsigned int id)
 	notifyPacket.id = NIL;
 	notifyPacket.notice = Notice::UPDATE_ROOM;
 	SendPacket(id, reinterpret_cast<unsigned char*>(&notifyPacket));
-
-	std::cout << "Send Update Room Packet" << std::endl;
 
 	Sleep(10);
 

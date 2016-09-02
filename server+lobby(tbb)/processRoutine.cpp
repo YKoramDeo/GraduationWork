@@ -138,6 +138,8 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 					gRoomInfoMAP.GetData(roomNo)->partner_1_ready = false;
 					gRoomInfoMAP.GetData(roomNo)->partner_2_ready = false;
 					gRoomInfoMAP.GetData(roomNo)->partner_3_ready = false;
+					for (int index = 0; index < NUM_OF_ITEM; ++index)
+						gRoomInfoMAP.GetData(roomNo)->ItemList[index] = NIL;
 
 					makeRoom = true;
 				}
@@ -340,7 +342,7 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 					}
 				}
 			}
-			DisplayDebugText(debugText);
+			//DisplayDebugText(debugText);
 		}
 		break;
 	default:
@@ -532,7 +534,8 @@ void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
 {
 	Packet::PlayerGetItem *data = reinterpret_cast<Packet::PlayerGetItem*>(packet);
 
-	gItemArr[data->itemID] = data->id;
+	int roomNo = gClientInfoMAP.GetData(data->id)->player.roomNo;
+	gRoomInfoMAP.GetData(roomNo)->ItemList[data->itemID] = data->id;
 
 	std::string debugText = "OnReceivePlayer GetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
 	DisplayDebugText(debugText);
@@ -581,12 +584,5 @@ void OnReceivePacket::MonsterAI(int key, unsigned char *packet)
 
 	DisplayDebugText(debugText);
 
-	return;
-}
-
-void InitializeItem(void)
-{
-	for (int count = 0; count < NUM_OF_ITEM; ++count)
-		gItemArr[count] = NIL;
 	return;
 }

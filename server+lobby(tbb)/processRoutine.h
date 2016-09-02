@@ -27,5 +27,3 @@ namespace OnReceivePacket
 	void MonsterMove(int, unsigned char*);
 	void MonsterAI(int, unsigned char*);
 }
-
-void InitializeItem(void);

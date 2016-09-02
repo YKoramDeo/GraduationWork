@@ -11,19 +11,12 @@ HANDLE ghIOCP;
 TBB_HASH_MAP<Client> gClientInfoMAP;
 TBB_HASH_MAP<RoomInfo> gRoomInfoMAP;
 
-/**********************변 경 사 항**********************/
-int gItemArr[NUM_OF_ITEM];
-/**********************변 경 사 항**********************/
-
 int main(int argc, char *argv[])
 {
 	std::vector<std::thread*> workerThreads;
 	std::thread acceptThread;
 
 	InitializeServer();
-	/**********************변 경 사 항**********************/
-	InitializeItem();
-	/**********************변 경 사 항**********************/
 
 	acceptThread = std::thread(AcceptThreadFunc);
 	for (int i = 0; i < NUM_THREADS; ++i)

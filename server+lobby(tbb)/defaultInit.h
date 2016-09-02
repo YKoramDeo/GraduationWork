@@ -12,14 +12,16 @@
 #include "stdafx.h"
 #include "protocol.h"
 
-#define NIL						-9999	// 내가 정한 NULL이 아닌 default 값
+#define NIL					-9999	// 내가 정한 NULL이 아닌 default 값
 
-#define MAX_INT 0x80000000
-#define MIN_INT 0x7FFFFFFF
+#define MAX_INT				0x80000000
+#define MIN_INT				0x7FFFFFFF
 
-#define DEFAULT_POS_X 247.92f;
-#define DEFAULT_POS_Y -4.29f;
-#define DEFAULT_POS_Z -1.23f;
+#define DEFAULT_POS_X		247.92f
+#define DEFAULT_POS_Y		-4.29f
+#define DEFAULT_POS_Z		-1.23f
+
+#define NUM_OF_ITEM			6
 
 struct Vector3
 {
@@ -52,6 +54,8 @@ struct RoomInfo
 	bool partner_1_ready;
 	bool partner_2_ready;
 	bool partner_3_ready;
+
+	int ItemList[NUM_OF_ITEM];
 };
 
 struct OverlapEx
@@ -72,8 +76,3 @@ struct Client
 	unsigned char	packetBuf[MAX_BUFF_SIZE];	// Recv되는 패킷이 조립되는 Buffer / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 	int				previousDataSize;			// 이전의 받은 양을 저장하는 변수 / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 };
-
-/**********************변 경 사 항**********************/
-#define NUM_OF_ITEM				6
-extern int gItemArr[NUM_OF_ITEM];
-/**********************변 경 사 항**********************/

@@ -16,6 +16,34 @@ bool BeCompeletedSendPacket(BYTE type, BYTE size)
 		if (size != sizeof(Packet::JoinRoom))
 			return false;
 		break;
+	case PacketType::Connect:
+		if (size != sizeof(Packet::Connect))
+			return false;
+		break;
+	case PacketType::PlayerMove:
+		if (size != sizeof(Packet::PlayerMove))
+			return false;
+		break;
+	case PacketType::PlayerLight:
+		if (size != sizeof(Packet::PlayerLight))
+			return false;
+		break;
+	case PacketType::PlayerShout:
+		if (size != sizeof(Packet::PlayerShout))
+			return false;
+		break;
+	case PacketType::PlayerGetItem:
+		if (size != sizeof(Packet::PlayerGetItem))
+			return false;
+		break;
+	case PacketType::MonsterMove:
+		if (size != sizeof(Packet::MonsterMove))
+			return false;
+		break;
+	case PacketType::MonsterAI:
+		if (size != sizeof(Packet::MonsterAI))
+			return false;
+		break;
 	default:
 		break;
 	}
@@ -37,6 +65,35 @@ void ProcessPacket(int key, unsigned char *packet)
 		break;
 	case (BYTE)PacketType::JoinRoom:
 		OnReceivePacket::JoinRoom(key, packet);
+		break;
+	case (BYTE)PacketType::Connect:
+		// Connect 동기화 하는 Packet
+		debugText = std::to_string(key) + " ProcessPacket::Connect::Called!!";
+		OnReceivePacket::Connect(key, packet);
+		break;
+	case (BYTE)PacketType::PlayerMove:
+		debugText = std::to_string(key) + " ProcessPacket::PlayerMove::Called!!";
+		OnReceivePacket::PlayerMove(key, packet);
+		break;
+	case (BYTE)PacketType::PlayerLight:
+		debugText = std::to_string(key) + " ProcessPacket::PlayerLight::Called!!";
+		OnReceivePacket::PlayerLight(key, packet);
+		break;
+	case (BYTE)PacketType::PlayerShout:
+		debugText = std::to_string(key) + " ProcessPacket::PlayerShout::Called!!";
+		OnReceivePacket::PlayerShout(key, packet);
+		break;
+	case (BYTE)PacketType::PlayerGetItem:
+		debugText = std::to_string(key) + " ProcessPacket::PlayerGetItem::Called!!";
+		OnReceivePacket::PlayerGetItem(key, packet);
+		break;
+	case (BYTE)PacketType::MonsterMove:
+		debugText = std::to_string(key) + " ProcessPacket::MonsterMove::Called!!";
+		OnReceivePacket::MonsterMove(key, packet);
+		break;
+	case (BYTE)PacketType::MonsterAI:
+		debugText = std::to_string(key) + " ProcessPacket::MonsterAI::Called!!";
+		OnReceivePacket::MonsterAI(key, packet);
 		break;
 	default:
 		debugText = "ProcessPacket :: Unknown Packet Type Detected from. " + std::to_string(key);
@@ -61,7 +118,7 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 	{
 	case Notice::RECV_SET_ID:
 		// 새로운 방의 정보를 전달
-		UpdateRoomInfo(id);
+		UpdateRoomInfo(key);
 		break;
 	case Notice::MAKE_ROOM:
 		{
@@ -70,7 +127,7 @@ void OnReceivePacket::Notify(int key, unsigned char* packet)
 
 			while (!makeRoom)
 			{
-				roomNo = gRoomInfoMAP.Size() + 1;
+				roomNo = (int)gRoomInfoMAP.Size() + 1;
 				if (gRoomInfoMAP.Insert(roomNo))
 				{
 					gRoomInfoMAP.GetData(roomNo)->no = roomNo;
@@ -347,5 +404,180 @@ void OnReceivePacket::JoinRoom(int key, unsigned char* packet)
 	}
 	DisplayDebugText(debugText);
 
+	return;
+}
+
+void OnReceivePacket::Connect(int key, unsigned char* packet)
+{
+	std::string debugText = "";
+
+	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
+
+	debugText = "ProcessPacket :: OnReceive Connect Packet :: From." + std::to_string(key);
+	DisplayDebugText(debugText);
+
+	if (gClientInfoMAP.Contains(key))
+	{
+		gClientInfoMAP.GetData(key)->player.pos.x = data->posX;
+		gClientInfoMAP.GetData(key)->player.pos.y = data->posY;
+		gClientInfoMAP.GetData(key)->player.pos.z = data->posZ;
+	}
+
+	// 방장일 경우 방장이라는 정보를 보내준다.
+	int roomNo = gClientInfoMAP.GetData(key)->player.roomNo;
+	if (gRoomInfoMAP.GetData(roomNo)->chiefID == data->id)
+	{
+		Packet::Notify youAreChiefPacket;
+		youAreChiefPacket.size = sizeof(Packet::Notify);
+		youAreChiefPacket.type = (BYTE)PacketType::Notify;
+		youAreChiefPacket.id = NIL;
+		youAreChiefPacket.notice = Notice::YOU_ARE_CHIEF;
+		SendPacket(key, reinterpret_cast<unsigned char*>(&youAreChiefPacket));
+		Sleep(10);
+	}
+	// 방에 진입한 클라이언트들에게 방에 참여한 인원들에 대한 정보를 넘김
+	Packet::Connect otherPlayerPacket;
+	otherPlayerPacket.size = sizeof(Packet::Connect);
+	otherPlayerPacket.type = (BYTE)PacketType::Connect;
+
+	if (key != gRoomInfoMAP.GetData(roomNo)->chiefID)
+	{
+		otherPlayerPacket.id = gRoomInfoMAP.GetData(roomNo)->chiefID;
+		otherPlayerPacket.posX = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.x;
+		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
+		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
+		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
+		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		Sleep(10);
+	}
+	if (key != gRoomInfoMAP.GetData(roomNo)->partner_1_ID && gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL)
+	{
+		otherPlayerPacket.id = gRoomInfoMAP.GetData(roomNo)->partner_1_ID;
+		otherPlayerPacket.posX = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.x;
+		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
+		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
+		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
+		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		Sleep(10);
+	}
+	if (key != gRoomInfoMAP.GetData(roomNo)->partner_2_ID && gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL)
+	{
+		otherPlayerPacket.id = gRoomInfoMAP.GetData(roomNo)->partner_2_ID;
+		otherPlayerPacket.posX = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.x;
+		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
+		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
+		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
+		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		Sleep(10);
+	}
+	if (key != gRoomInfoMAP.GetData(roomNo)->partner_3_ID && gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL)
+	{
+		otherPlayerPacket.id = gRoomInfoMAP.GetData(roomNo)->partner_3_ID;
+		otherPlayerPacket.posX = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.x;
+		otherPlayerPacket.posY = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.y;
+		otherPlayerPacket.posZ = gClientInfoMAP.GetData(otherPlayerPacket.id)->player.pos.z;
+		SendPacket(key, reinterpret_cast<unsigned char*>(&otherPlayerPacket));
+		std::cout << "Send Previous " << otherPlayerPacket.id << " OtherPlayer Data To." << key << std::endl;
+		Sleep(10);
+	}
+
+	return;
+}
+
+void OnReceivePacket::PlayerMove(int key, unsigned char* packet)
+{
+	Packet::Connect *data = reinterpret_cast<Packet::Connect*>(packet);
+	
+	if (gClientInfoMAP.Contains(key))
+	{
+		gClientInfoMAP.GetData(key)->player.pos.x = data->posX;
+		gClientInfoMAP.GetData(key)->player.pos.y = data->posY;
+		gClientInfoMAP.GetData(key)->player.pos.z = data->posZ;
+	}
+
+	// 다른 클라이언트에게 새로운 클라이언트 알림
+
+	BroadcastingExceptIndex(key, packet);
+
+	std::string debugText = "OnReceivePlayer PlayerMove Packet:: " + std::to_string(data->posX) + ", " + std::to_string(data->posY) + ", " + std::to_string(data->posZ) + " from." + std::to_string(data->id);
+	//DisplayDebugText(debugText);
+
+	return;
+}
+
+void OnReceivePacket::PlayerLight(int key, unsigned char* packet)
+{
+	BroadcastingExceptIndex(key, packet);
+
+	return;
+}
+
+void OnReceivePacket::PlayerShout(int key, unsigned char* packet)
+{
+
+	BroadcastingExceptIndex(key, packet);
+	return;
+}
+
+void OnReceivePacket::PlayerGetItem(int key, unsigned char* packet)
+{
+	Packet::PlayerGetItem *data = reinterpret_cast<Packet::PlayerGetItem*>(packet);
+
+	gItemArr[data->itemID] = data->id;
+
+	std::string debugText = "OnReceivePlayer GetItem Packet:: " + std::to_string(data->id) + " get item " + std::to_string(data->itemID);
+	DisplayDebugText(debugText);
+
+	BroadcastingExceptIndex(key, packet);
+
+	return;
+}
+
+void OnReceivePacket::MonsterMove(int key, unsigned char *packet)
+{
+	// 이 함수는 방장인 client에게만 받아서 처리하는 함수
+	bool retval = true;
+
+	Packet::MonsterMove *data = reinterpret_cast<Packet::MonsterMove*>(packet);
+
+	int roomNo = gClientInfoMAP.GetData(key)->player.roomNo;
+
+	if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_1_ID, packet);
+	if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_2_ID, packet);
+	if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_3_ID, packet);
+
+	std::string debugText = "OnReceiveMonsterMovePacket:: Send Monster Status : "
+		+ std::to_string(data->status) + ", Pos (" + std::to_string(data->posX) + ", " + std::to_string(data->posY) + ", " + std::to_string(data->posZ) + ")";
+
+	//DisplayDebugText(debugText);
+
+	return;
+}
+
+void OnReceivePacket::MonsterAI(int key, unsigned char *packet)
+{
+	bool retval = true;
+
+	Packet::MonsterAI *data = reinterpret_cast<Packet::MonsterAI*>(packet);
+
+	int roomNo = gClientInfoMAP.GetData(key)->player.roomNo;
+
+	if (gRoomInfoMAP.GetData(roomNo)->chiefID != key) SendPacket(gRoomInfoMAP.GetData(roomNo)->chiefID, packet);
+	if (gRoomInfoMAP.GetData(roomNo)->partner_1_ID != NIL && gRoomInfoMAP.GetData(roomNo)->partner_1_ID != key) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_1_ID, packet);
+	if (gRoomInfoMAP.GetData(roomNo)->partner_2_ID != NIL && gRoomInfoMAP.GetData(roomNo)->partner_2_ID != key) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_2_ID, packet);
+	if (gRoomInfoMAP.GetData(roomNo)->partner_3_ID != NIL && gRoomInfoMAP.GetData(roomNo)->partner_3_ID != key) SendPacket(gRoomInfoMAP.GetData(roomNo)->partner_3_ID, packet);
+
+	std::string debugText = "OnReceiveMonsterAIPacket:: Send Monster Status : "
+		+ std::to_string(data->status) + ", Last Pos (" + std::to_string(data->lastPosX) + ", " + std::to_string(data->lastPosY) + ", " + std::to_string(data->lastPosZ) + ")";
+
+	DisplayDebugText(debugText);
+
+	return;
+}
+
+void InitializeItem(void)
+{
+	for (int count = 0; count < NUM_OF_ITEM; ++count)
+		gItemArr[count] = NIL;
 	return;
 }

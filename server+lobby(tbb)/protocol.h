@@ -27,7 +27,14 @@ enum PacketType
 	Notify,
 	CreateRoom,
 	JoinRoom,
-	RenewalRoomInfo
+	RenewalRoomInfo,
+	Connect,
+	PlayerMove,
+	PlayerLight,
+	PlayerShout,
+	PlayerGetItem,
+	MonsterMove,
+	MonsterAI
 };
 
 enum Notice
@@ -39,7 +46,8 @@ enum Notice
 	JOIN_FAIL,
 	GAME_READY,
 	CANCEL_READY,
-	GAME_START
+	GAME_START,
+	YOU_ARE_CHIEF
 };
 
 #pragma pack(push,1)
@@ -97,6 +105,86 @@ namespace Packet
 		bool partner_2_ready;
 		int partner_3_ID;
 		bool partner_3_ready;
+	};
+
+	struct Connect
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		float posX;
+		float posY;
+		float posZ;
+	};
+
+	struct PlayerMove
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		float posX;
+		float posY;
+		float posZ;
+
+		float dirX;
+		float dirY;
+		float dirZ;
+
+		float horizental;
+		float vertical;
+		bool sneak;
+	};
+
+	struct PlayerLight
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		bool on;
+		float rotX;
+		float rotY;
+		float rotZ;
+		float rotW;
+	};
+
+	struct PlayerShout
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		bool shouting;
+		float posX;
+		float posY;
+		float posZ;
+	};
+
+	struct PlayerGetItem
+	{
+		BYTE size;
+		BYTE type;
+		int id;
+		int itemID;
+	};
+
+	struct MonsterMove
+	{
+
+		BYTE size;
+		BYTE type;
+		int status;
+		float posX;
+		float posY;
+		float posZ;
+	};
+
+	struct MonsterAI
+	{
+		BYTE size;
+		BYTE type;
+		int status;
+		float lastPosX;
+		float lastPosY;
+		float lastPosZ;
 	};
 }
 #pragma pack(pop)

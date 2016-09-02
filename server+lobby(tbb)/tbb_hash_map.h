@@ -18,7 +18,7 @@ public:
 		return this->m_map.erase(key);
 	}
 
-	int Size() {
+	size_t Size() {
 		return this->m_map.size();
 	}
 

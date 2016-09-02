@@ -13,7 +13,6 @@
 #include "protocol.h"
 
 #define NIL						-9999	// 내가 정한 NULL이 아닌 default 값
-#define NUM_OF_MONSTER_PATH		4
 
 #define MAX_INT 0x80000000
 #define MIN_INT 0x7FFFFFFF
@@ -73,3 +72,8 @@ struct Client
 	unsigned char	packetBuf[MAX_BUFF_SIZE];	// Recv되는 패킷이 조립되는 Buffer / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 	int				previousDataSize;			// 이전의 받은 양을 저장하는 변수 / Send 에서는 사용하지 않으므로 확장 구조체에 포함되지 않음.
 };
+
+/**********************변 경 사 항**********************/
+#define NUM_OF_ITEM				6
+extern int gItemArr[NUM_OF_ITEM];
+/**********************변 경 사 항**********************/

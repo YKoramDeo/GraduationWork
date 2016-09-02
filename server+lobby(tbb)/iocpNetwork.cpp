@@ -265,13 +265,6 @@ void AcceptThreadFunc(void)
 		gClientInfoMAP.GetData(newID)->player.pos.y = DEFAULT_POS_Y;
 		gClientInfoMAP.GetData(newID)->player.pos.z = DEFAULT_POS_Z;
 
-		// 새로운 클라이언트 접속 알림
-		Packet::SetID clientSetIDPacket;
-		clientSetIDPacket.size = sizeof(Packet::SetID);
-		clientSetIDPacket.type = (BYTE)PacketType::SetID;
-		clientSetIDPacket.id = newID;
-		SendPacket(newID, reinterpret_cast<unsigned char*>(&clientSetIDPacket));
-
 		// 새로운 소켓 Recv 수행
 		DWORD flags = 0;
 		// WSARecv() : 5번째, 6번째 두 인자를 NULL 값으로 사용하면 recv() 함수처럼 동기 함수로 동작
@@ -284,6 +277,13 @@ void AcceptThreadFunc(void)
 				DisplayErrMsg("AcceptThread :: WSARecv", errNo);
 			}
 		}
+
+		// 새로운 클라이언트 접속 알림
+		Packet::SetID clientSetIDPacket;
+		clientSetIDPacket.size = sizeof(Packet::SetID);
+		clientSetIDPacket.type = (BYTE)PacketType::SetID;
+		clientSetIDPacket.id = newID;
+		SendPacket(newID, reinterpret_cast<unsigned char*>(&clientSetIDPacket));
 
 		// Output
 		std::string debugText = "AcceptThread :: ID " + std::to_string(newID) + " client Accept Success !!";
